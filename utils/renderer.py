@@ -1,39 +1,30 @@
+
+import asyncio
+from pyppeteer import launch
+from jinja2 import Environment, FileSystemLoader
 import os
-import imgkit
 
-def render_newsletter_html(officer_report, template_path, output_path):
-    with open(template_path, 'r', encoding='utf-8') as file:
-        template = file.read()
+TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), '../templates')
+GENERATED_DIR = os.path.join(os.path.dirname(__file__), '../generated')
+os.makedirs(GENERATED_DIR, exist_ok=True)
 
-    html_content = template.format(**officer_report)
-    html_output_path = os.path.join(output_path, f"{officer_report['officer_name']}.html")
+env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
 
-    with open(html_output_path, 'w', encoding='utf-8') as html_file:
-        html_file.write(html_content)
+async def render_newsletter_to_png(html_file, output_path):
+    browser = await launch(headless=True, args=['--no-sandbox'])
+    page = await browser.newPage()
+    await page.goto(f'file://{html_file}', {'waitUntil': 'networkidle0'})
+    await page.screenshot({'path': output_path, 'fullPage': True})
+    await browser.close()
 
-    return html_output_path
+def render_newsletters(officer_reports):
+    template = env.get_template("newsletter.html")
+    for report in officer_reports:
+        html_content = template.render(**report)
+        safe_name = report['name'].replace(" ", "_").replace("(", "").replace(")", "")
+        html_path = os.path.join(GENERATED_DIR, f"{safe_name}.html")
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(html_content)
 
-def render_newsletter_image(html_path, output_path):
-    img_output_path = html_path.replace(".html", ".png")
-
-    options = {
-        "format": "png",
-        "encoding": "UTF-8",
-        "quiet": "",
-        "disable-smart-width": "",
-        "width": "800"
-    }
-
-    imgkit.from_file(html_path, img_output_path, options=options)
-    return img_output_path
-
-def render_newsletters(reports, template_path, output_path):
-    os.makedirs(output_path, exist_ok=True)
-    results = []
-
-    for report in reports:
-        html_path = render_newsletter_html(report, template_path, output_path)
-        image_path = render_newsletter_image(html_path, output_path)
-        results.append((html_path, image_path))
-
-    return results
+        png_path = os.path.join(GENERATED_DIR, f"{safe_name}.png")
+        asyncio.get_event_loop().run_until_complete(render_newsletter_to_png(html_path, png_path))
