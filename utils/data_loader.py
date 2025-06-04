@@ -1,7 +1,5 @@
-
 import pandas as pd
 import re
-import difflib
 from utils.encoding import detect_encoding
 
 def extract_dates_from_columns(columns):
@@ -16,8 +14,7 @@ def detect_header_and_load_excel(file):
     for skip in range(0, 15):
         try:
             df = pd.read_excel(file, skiprows=skip)
-            if 'LO/LE' in df.columns:
-                print(f"Successfully parsed Excel with skiprows={skip}")
+            if 'Name' in df.columns:
                 return df
         except Exception:
             continue
@@ -29,7 +26,7 @@ def load_all_data(ratings_file, caseload_file, namelist_file):
 
     namelist_encoding = detect_encoding(namelist_file)
     namelist_df = pd.read_csv(namelist_file, encoding=namelist_encoding)
-    namelist_df.columns = namelist_df.columns.str.strip()  # strip column names
+    namelist_df.columns = namelist_df.columns.str.strip()
 
     caseload_df = detect_header_and_load_excel(caseload_file)
     caseload_df.columns = caseload_df.columns.map(str)

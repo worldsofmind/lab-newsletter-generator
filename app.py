@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 from utils.data_loader import load_all_data
@@ -11,7 +10,7 @@ st.set_page_config(page_title="📬 LAB Officer Newsletter Generator", layout="w
 with st.sidebar:
     st.title("📂 Upload Files")
     ratings_file = st.file_uploader("Upload `ratings.csv`", type="csv")
-    caseload_file = st.file_uploader("Upload `case_load.xlsx`", type=["xls", "xlsx"])
+    caseload_file = st.file_uploader("Upload `case_load.xlsx`", type=["xls", "xlsx", "csv"])
     namelist_file = st.file_uploader("Upload `namelist.csv`", type="csv")
 
 if ratings_file and caseload_file and namelist_file:
@@ -36,11 +35,11 @@ if ratings_file and caseload_file and namelist_file:
         except Exception as e:
             st.error(f"❌ An error occurred: {e}")
     else:
-        officer_names = namelist_df['name_self'].dropna().sort_values().unique().tolist()
+        officer_names = namelist_df['Name'].dropna().sort_values().unique().tolist()
         selected_officer = st.selectbox("Select an officer", ["-- Select --"] + officer_names)
 
         if selected_officer != "-- Select --":
-            officer_row = namelist_df[namelist_df['name_self'] == selected_officer].iloc[0]
+            officer_row = namelist_df[namelist_df['Name'] == selected_officer].iloc[0]
             try:
                 officer_report = compute_officer_stats(officer_row, caseload_df, ratings_df, period)
                 officer_report["period"] = period
