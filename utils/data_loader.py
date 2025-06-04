@@ -1,6 +1,7 @@
 import pandas as pd
 from datetime import datetime
 import chardet
+import re
 
 def detect_header_and_load_excel(file):
     for header in range(10):
@@ -16,6 +17,21 @@ def detect_encoding(file):
     file.seek(0)
     return chardet.detect(raw_data)['encoding']
 
+def extract_dates_from_columns(columns):
+    date_pattern = r"(\d{2}/\d{2}/\d{4})"
+    range_pattern = r"(\d{2}/\d{2}/\d{4}) to (\d{2}/\d{2}/\d{4})"
+
+    for col in columns:
+        if match := re.search(range_pattern, str(col)):
+            return match.group(1), match.group(2)
+
+    for col in columns:
+        dates = re.findall(date_pattern, str(col))
+        if dates:
+            return dates[0], dates[-1]
+
+    raise ValueError("Could not infer date range from column headers.")
+
 def load_all_data(ratings_file, caseload_file, namelist_file):
     ratings_encoding = detect_encoding(ratings_file)
     namelist_encoding = detect_encoding(namelist_file)
@@ -24,20 +40,17 @@ def load_all_data(ratings_file, caseload_file, namelist_file):
     namelist_df = pd.read_csv(namelist_file, encoding=namelist_encoding)
     caseload_df = detect_header_and_load_excel(caseload_file)
 
-    caseload_df.columns = caseload_df.columns.map(str)  # Ensure all column names are strings
-    date_col = next((col for col in caseload_df.columns if 'Date' in col and 'Assigned' in col), None)
-    if date_col is None:
-        raise ValueError("Could not identify the 'Date Assigned' column in case_load.")
+    caseload_df.columns = caseload_df.columns.map(str)
+    date_start_raw, date_end_raw = extract_dates_from_columns(caseload_df.columns)
 
-    caseload_df[date_col] = pd.to_datetime(caseload_df[date_col], errors='coerce')
-    period_start = caseload_df[date_col].min().strftime("%d %b %Y")
-    period_end = caseload_df[date_col].max().strftime("%d %b %Y")
-    quarter = f"{caseload_df[date_col].min().strftime('%b')} - {caseload_df[date_col].max().strftime('%b')}"
-    subject = f"Personal Statistics - {quarter} {caseload_df[date_col].max().year}"
+    date_start = datetime.strptime(date_start_raw, "%d/%m/%Y").strftime("%d %b %Y")
+    date_end = datetime.strptime(date_end_raw, "%d/%m/%Y").strftime("%d %b %Y")
+    quarter = f"{datetime.strptime(date_start_raw, '%d/%m/%Y').strftime('%b')} - {datetime.strptime(date_end_raw, '%d/%m/%Y').strftime('%b')}"
+    subject = f"Personal Statistics - {quarter} {datetime.strptime(date_end_raw, '%d/%m/%Y').year}"
 
     period = {
-        "date_start": period_start,
-        "date_end": period_end,
+        "date_start": date_start,
+        "date_end": date_end,
         "quarter": quarter,
         "email_subject": subject,
     }
