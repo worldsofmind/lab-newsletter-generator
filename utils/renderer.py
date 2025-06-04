@@ -5,7 +5,7 @@ from html2image import Html2Image
 
 env = Environment(loader=FileSystemLoader("templates"))
 
-def render_newsletters(officer_reports, template_file="VL.html", output_dir="generated"):
+def render_newsletters(officer_reports, template_file="newsletter.html", output_dir="generated"):
     os.makedirs(output_dir, exist_ok=True)
     template = env.get_template(template_file)
     hti = Html2Image()
