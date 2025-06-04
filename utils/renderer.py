@@ -1,8 +1,6 @@
-# lab_newsletter_generator/utils/renderer.py
-
 import os
 from jinja2 import Environment, FileSystemLoader
-import imgkit
+from html2image import Html2Image
 
 TEMPLATE_DIR = "templates"
 OUTPUT_DIR = "generated_reports"
@@ -24,12 +22,11 @@ def save_html_and_png(html, filename):
         os.makedirs(OUTPUT_DIR)
 
     html_path = os.path.join(OUTPUT_DIR, f"{filename}.html")
-    png_path = os.path.join(OUTPUT_DIR, f"{filename}.png")
-
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-    imgkit.from_file(html_path, png_path)
+    hti = Html2Image(output_path=OUTPUT_DIR)
+    hti.screenshot(html_str=html, save_as=f"{filename}.png")
 
 def render_newsletters(reports, period):
     for report in reports:
