@@ -29,6 +29,7 @@ def load_all_data(ratings_file, caseload_file, namelist_file):
 
     namelist_encoding = detect_encoding(namelist_file)
     namelist_df = pd.read_csv(namelist_file, encoding=namelist_encoding)
+    namelist_df.columns = namelist_df.columns.str.strip()  # strip column names
 
     caseload_df = detect_header_and_load_excel(caseload_file)
     caseload_df.columns = caseload_df.columns.map(str)

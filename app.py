@@ -14,12 +14,12 @@ with st.sidebar:
     caseload_file = st.file_uploader("Upload `case_load.xlsx`", type=["xls", "xlsx"])
     namelist_file = st.file_uploader("Upload `namelist.csv`", type="csv")
 
-# Process files if all are uploaded
 if ratings_file and caseload_file and namelist_file:
     try:
         ratings_df, caseload_df, namelist_df, period = load_all_data(
             ratings_file, caseload_file, namelist_file
         )
+        namelist_df.columns = namelist_df.columns.str.strip()
     except Exception as e:
         st.error(f"❌ Error loading files: {e}")
         st.stop()
@@ -43,7 +43,7 @@ if ratings_file and caseload_file and namelist_file:
             officer_row = namelist_df[namelist_df['name_self'] == selected_officer].iloc[0]
             try:
                 officer_report = compute_officer_stats(officer_row, caseload_df, ratings_df, period)
-                officer_report["period"] = period  # Ensure period is included
+                officer_report["period"] = period
                 render_newsletters([officer_report])
                 st.success(f"✅ Newsletter generated for {selected_officer}.")
             except Exception as e:
