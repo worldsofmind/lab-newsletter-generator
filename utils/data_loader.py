@@ -18,6 +18,10 @@ def detect_encoding(file):
     return chardet.detect(raw_data)['encoding']
 
 def extract_dates_from_columns(columns):
+    print("DEBUG: Column headers seen:")
+    for col in columns:
+        print(f"- {repr(col)}")
+
     date_pattern = r"(\d{2}/\d{2}/\d{4})"
     range_pattern = r"(\d{2}/\d{2}/\d{4}) to (\d{2}/\d{2}/\d{4})"
 
