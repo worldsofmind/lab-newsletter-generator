@@ -1,48 +1,70 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>{{ officer_name }}'s Newsletter</title>
-  <style>
-    body { font-family: Arial; margin: 40px; background: #f9f9f9; color: #333; }
-    h1 { color: #2c3e50; }
-    .section { margin-bottom: 25px; }
-    .section h2 { color: #1f5a94; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    td, th { padding: 8px 12px; border: 1px solid #ccc; }
-  </style>
+    <meta charset="UTF-8">
+    <title>LAB Officer Newsletter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+        }
+        .header h1 {
+            margin-bottom: 0;
+        }
+        .header h2 {
+            margin-top: 5px;
+            color: #666;
+        }
+        .section {
+            margin-top: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
 </head>
 <body>
+    <div class="header">
+        <h1>Personal Statistics Newsletter</h1>
+        <h2>{{ period.date_start }} – {{ period.date_end }}</h2>
+        <h3>{{ name }} ({{ abbreviation }})</h3>
+    </div>
 
-  <h1>📬 Officer Statistics – {{ period.quarter }} {{ period.date_end[-4:] }}</h1>
-  <h2>{{ officer_name }}</h2>
+    <div class="section">
+        <h3>Case Statistics</h3>
+        <table>
+            <tr>
+                <th>Type</th>
+                <th>Case Count</th>
+            </tr>
+            <tr>
+                <td>In-house</td>
+                <td>{{ inhouse_count }}</td>
+            </tr>
+            <tr>
+                <td>Assigned</td>
+                <td>{{ assigned_count }}</td>
+            </tr>
+        </table>
+    </div>
 
-  <div class="section">
-    <h2>📊 In-House Case Statistics</h2>
-    <table>
-      {% for key, value in inhouse_stats.items() %}
-      <tr><th>{{ key.capitalize() }}</th><td>{{ value }}</td></tr>
-      {% endfor %}
-    </table>
-  </div>
-
-  <div class="section">
-    <h2>📦 Assigned Case Statistics</h2>
-    <table>
-      {% for key, value in assigned_stats.items() %}
-      <tr><th>{{ key.capitalize() }}</th><td>{{ value }}</td></tr>
-      {% endfor %}
-    </table>
-  </div>
-
-  <div class="section">
-    <h2>🗣️ Survey Summary</h2>
-    <table>
-      {% for question, score in ratings_summary.items() %}
-      <tr><th>{{ question }}</th><td>{{ score }}</td></tr>
-      {% endfor %}
-    </table>
-  </div>
-
+    <div class="section">
+        <h3>Average Rating</h3>
+        <p>“I am overall satisfied with LAB’s services”: <strong>{{ avg_rating }}</strong></p>
+    </div>
 </body>
 </html>
