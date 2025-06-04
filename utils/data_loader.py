@@ -1,3 +1,4 @@
+# data_loader.py
 import pandas as pd
 import re
 from utils.encoding import detect_encoding
@@ -10,15 +11,17 @@ def extract_dates_from_columns(columns):
             return matches[0], matches[1]
     raise ValueError("Could not infer date range from column headers.")
 
-def detect_header_and_load_excel(file):
+def detect_header_and_load_csv(file):
+    encoding = detect_encoding(file)
+    file.seek(0)
     for skip in range(0, 15):
         try:
-            df = pd.read_excel(file, skiprows=skip)
+            df = pd.read_csv(file, skiprows=skip, encoding=encoding)
             if 'Name' in df.columns:
                 return df
         except Exception:
             continue
-    raise ValueError("Could not parse Excel file with known headers.")
+    raise ValueError("Could not parse CSV file with known headers.")
 
 def load_all_data(ratings_file, caseload_file, namelist_file):
     ratings_encoding = detect_encoding(ratings_file)
@@ -28,7 +31,7 @@ def load_all_data(ratings_file, caseload_file, namelist_file):
     namelist_df = pd.read_csv(namelist_file, encoding=namelist_encoding)
     namelist_df.columns = namelist_df.columns.str.strip()
 
-    caseload_df = detect_header_and_load_excel(caseload_file)
+    caseload_df = detect_header_and_load_csv(caseload_file)
     caseload_df.columns = caseload_df.columns.map(str)
 
     date_start_raw, date_end_raw = extract_dates_from_columns(caseload_df.columns)
