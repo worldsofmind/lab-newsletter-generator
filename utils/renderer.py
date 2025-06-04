@@ -1,38 +1,22 @@
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 import os
-import pdfkit
-from premailer import transform
+from jinja2 import Environment, FileSystemLoader
+from html2image import Html2Image
 
-TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates")
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "generated")
+def render_newsletters(officer_reports, template_name="newsletter.html", output_dir="generated"):
+    env = Environment(loader=FileSystemLoader("templates"))
+    template = env.get_template(template_name)
 
-env = Environment(
-    loader=FileSystemLoader(TEMPLATE_DIR),
-    autoescape=select_autoescape(['html', 'xml'])
-)
+    os.makedirs(output_dir, exist_ok=True)
+    hti = Html2Image(output_path=output_dir)
 
-def render_newsletters(reports):
-    template = env.get_template("newsletter.html")
-
-    if not os.path.exists(OUTPUT_DIR):
-        os.makedirs(OUTPUT_DIR)
-
-    for report in reports:
+    for report in officer_reports:
         html_content = template.render(report)
-        styled_html = transform(html_content)
+        html_file_path = os.path.join(output_dir, f"{report['name']}.html")
+        with open(html_file_path, "w", encoding="utf-8") as f:
+            f.write(html_content)
 
-        officer_safe_name = report['name'].replace(" ", "_").replace("/", "_")
-        html_path = os.path.join(OUTPUT_DIR, f"{officer_safe_name}.html")
-        pdf_path = os.path.join(OUTPUT_DIR, f"{officer_safe_name}.pdf")
+        # Generate PNG from HTML
+        hti.screenshot(html_str=html_content, save_as=f"{report['name']}.png")
 
-        with open(html_path, "w", encoding="utf-8") as f:
-            f.write(styled_html)
-
-        # Optional: Generate PDF from HTML (requires wkhtmltopdf installed)
-        try:
-            pdfkit.from_file(html_path, pdf_path)
-        except Exception as e:
-            print(f"Failed to generate PDF for {report['name']}: {e}")
-
-    return f"Newsletters saved to: {OUTPUT_DIR}"
+    return output_dir
