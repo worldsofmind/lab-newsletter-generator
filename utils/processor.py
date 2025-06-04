@@ -22,7 +22,7 @@ def compute_officer_stats(officer, caseload_df, ratings_df, period):
     avg_rating = officer_ratings['Overall Rating'].mean() if not officer_ratings.empty else None
 
     return {
-        'name': officer['name_display'],
+        'name': officer['name_full'],
         'inhouse_cases': int(inhouse_cases.sum()) if isinstance(inhouse_cases, pd.Series) else len(inhouse_cases),
         'assigned_cases': int(assigned_cases.sum()) if isinstance(assigned_cases, pd.Series) else len(assigned_cases),
         'avg_rating': round(avg_rating, 2) if avg_rating is not None else 'N/A'
