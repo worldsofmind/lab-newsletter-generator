@@ -1,7 +1,6 @@
-# lab_newsletter_generator/utils/data_loader.py
-
 import pandas as pd
 from datetime import datetime
+import chardet
 
 def detect_header_and_load_excel(file):
     for header in range(10):
@@ -11,9 +10,18 @@ def detect_header_and_load_excel(file):
             return pd.read_excel(file, skiprows=header)
     raise ValueError("Failed to find header row in case_load file.")
 
+def detect_encoding(file):
+    file.seek(0)
+    raw_data = file.read(10000)
+    file.seek(0)
+    return chardet.detect(raw_data)['encoding']
+
 def load_all_data(ratings_file, caseload_file, namelist_file):
-    ratings_df = pd.read_csv(ratings_file)
-    namelist_df = pd.read_csv(namelist_file)
+    ratings_encoding = detect_encoding(ratings_file)
+    namelist_encoding = detect_encoding(namelist_file)
+
+    ratings_df = pd.read_csv(ratings_file, encoding=ratings_encoding)
+    namelist_df = pd.read_csv(namelist_file, encoding=namelist_encoding)
     caseload_df = detect_header_and_load_excel(caseload_file)
 
     date_col = next((col for col in caseload_df.columns if 'Date' in col and 'Assigned' in col), None)
