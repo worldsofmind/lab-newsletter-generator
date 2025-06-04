@@ -10,7 +10,9 @@ def detect_header_and_load_excel(file):
         print("Columns seen:", [str(col) for col in df_try.columns])
         if any("Officer" in str(col) or "LO/LE" in str(col) or "In-house" in str(col) or "Assigned Cases" in str(col) for col in df_try.columns):
             file.seek(0)
-            return pd.read_excel(file, skiprows=header)
+            final_df = pd.read_excel(file, skiprows=header)
+            print("✅ Final selected header (columns):", final_df.columns.tolist())
+            return final_df
     raise ValueError("Failed to find header row in case_load file.")
 
 def detect_encoding(file):
@@ -20,7 +22,7 @@ def detect_encoding(file):
     return chardet.detect(raw_data)['encoding']
 
 def extract_dates_from_columns(columns):
-    print("DEBUG: Column headers seen:")
+    print("DEBUG: Column headers seen after header row:")
     for col in columns:
         print(f"- {repr(col)}")
 
