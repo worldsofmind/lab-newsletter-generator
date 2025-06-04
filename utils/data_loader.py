@@ -24,7 +24,7 @@ def load_all_data(ratings_file, caseload_file, namelist_file):
     namelist_df = pd.read_csv(namelist_file, encoding=namelist_encoding)
     caseload_df = detect_header_and_load_excel(caseload_file)
 
-    date_col = next((col for col in caseload_df.columns if 'Date' in col and 'Assigned' in col), None)
+    date_col = next((col for col in caseload_df.columns if 'Date' in str(col) and 'Assigned' in str(col)), None)
     if date_col is None:
         raise ValueError("Could not identify the 'Date Assigned' column in case_load.")
 
