@@ -1,0 +1,8 @@
+streamlit
+pandas
+openpyxl
+jinja2
+html2image
+yagmail
+fuzzywuzzy
+python-Levenshtein
