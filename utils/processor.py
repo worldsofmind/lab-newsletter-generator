@@ -1,31 +1,41 @@
 
 import pandas as pd
-import difflib
+
+def filter_period(df, date_col, start, end):
+    df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+    mask = (df[date_col] >= pd.to_datetime(start)) & (df[date_col] <= pd.to_datetime(end))
+    return df[mask]
 
 def compute_officer_stats(officer, caseload_df, ratings_df, period):
     name = officer['name_self']
-    case_df = caseload_df.copy()
+    abbreviation = officer['abbreviation']
+    full_display_name = f"{name} ({abbreviation})"
+
+    start_date, end_date = period['date_start'], period['date_end']
+
+    # Auto-detect relevant date and case columns
+    date_col = None
+    for col in caseload_df.columns:
+        if 'assigned' in col.lower() and 'date' in col.lower():
+            date_col = col
+            break
+    if not date_col:
+        raise KeyError("Could not find a column similar to 'Date Assigned to Current Officer'")
+
+    case_df = filter_period(caseload_df.copy(), date_col, start_date, end_date)
     case_df = case_df[case_df['LO/LE'].str.strip().str.lower() == name.strip().lower()]
 
-    # Defensive 'Case Type' detection (not always needed for aggregated data)
-    case_type_col = next((col for col in case_df.columns if 'case type' in col.lower()), None)
-    if case_type_col:
-        inhouse_cases = case_df[case_df[case_type_col].str.contains('In-house', case=False, na=False)]
-        assigned_cases = case_df[case_df[case_type_col].str.contains('Assigned', case=False, na=False)]
-    else:
-        inhouse_cases = case_df.filter(like='In-house', axis=1).sum(axis=1)
-        assigned_cases = case_df.filter(like='Assigned', axis=1).sum(axis=1)
+    inhouse_cases = case_df[case_df['Case Type'].str.contains('In-house', case=False, na=False)]
+    assigned_cases = case_df[case_df['Case Type'].str.contains('Assigned', case=False, na=False)]
 
-    officer_ratings = ratings_df[(ratings_df['LO'].str.strip().str.lower() == name.strip().lower()) |
-                                 (ratings_df['LE'].str.strip().str.lower() == name.strip().lower())]
-
+    officer_ratings = ratings_df[ratings_df['LO/LE'].str.strip().str.lower() == name.strip().lower()]
     avg_rating = officer_ratings['Overall Rating'].mean() if not officer_ratings.empty else None
 
     return {
-        'name': officer['name_full'],
-        'inhouse_cases': int(inhouse_cases.sum()) if isinstance(inhouse_cases, pd.Series) else len(inhouse_cases),
-        'assigned_cases': int(assigned_cases.sum()) if isinstance(assigned_cases, pd.Series) else len(assigned_cases),
-        'avg_rating': round(avg_rating, 2) if avg_rating is not None else 'N/A'
+        'name': full_display_name,
+        'inhouse_count': len(inhouse_cases),
+        'assigned_count': len(assigned_cases),
+        'avg_rating': round(avg_rating, 2) if avg_rating else "N/A"
     }
 
 def process_all_officers(ratings_df, caseload_df, namelist_df, period):
