@@ -6,3 +6,4 @@ html2image
 yagmail
 fuzzywuzzy
 python-Levenshtein
+chardet
