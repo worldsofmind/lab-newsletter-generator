@@ -1,7 +1,6 @@
 streamlit
 pandas
 openpyxl
-pyppeteer
 jinja2
 html2image
 yagmail

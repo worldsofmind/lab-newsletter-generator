@@ -1,4 +1,3 @@
-
 import pandas as pd
 import difflib
 
@@ -13,18 +12,18 @@ def filter_period(df, start, end):
     return df[mask]
 
 def compute_officer_stats(officer, caseload_df, ratings_df, period):
-    name = officer['name_self']
-    abbreviation = name.split()[-1].strip("()")
+    name = officer['Name']
+    abbreviation = officer['Abbreviation']
     start_date, end_date = period['date_start'], period['date_end']
+
     case_df = filter_period(caseload_df.copy(), start_date, end_date)
-    case_df = case_df[case_df['LO/LE'].str.strip().str.lower() == name.strip().lower()]
+    case_df = case_df[case_df['Name'].str.strip().str.lower() == name.strip().lower()]
+
     inhouse_cases = case_df[case_df['Case Type'].str.contains('In-house', case=False, na=False)].shape[0]
     assigned_cases = case_df[case_df['Case Type'].str.contains('Assigned', case=False, na=False)].shape[0]
 
-    ratings_filtered = ratings_df[
-        ratings_df['LO/LE'].str.strip().str.lower() == name.strip().lower()
-    ]
-    avg_rating = ratings_filtered['Rating'].mean() if not ratings_filtered.empty else None
+    ratings_filtered = ratings_df[ratings_df['Name'].str.strip().str.lower() == name.strip().lower()]
+    avg_rating = ratings_filtered['I am overall satisfied with LAB’s services'].mean() if not ratings_filtered.empty else None
 
     return {
         'name': name,

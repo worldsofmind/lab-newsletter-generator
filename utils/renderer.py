@@ -1,4 +1,3 @@
-
 import asyncio
 from pyppeteer import launch
 from jinja2 import Environment, FileSystemLoader
