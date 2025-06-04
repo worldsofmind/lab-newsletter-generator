@@ -14,14 +14,13 @@ def extract_dates_from_columns(columns):
     for col in columns:
         print(f"- {repr(col)}")
 
-    # Try to find a range "dd/mm/yyyy to dd/mm/yyyy"
     range_pattern = r"(\d{2}/\d{2}/\d{4}) to (\d{2}/\d{2}/\d{4})"
+    date_pattern = r"(\d{2}/\d{2}/\d{4})"
+
     for col in columns:
         if match := re.search(range_pattern, str(col)):
             return match.group(1), match.group(2)
 
-    # Try to find individual dates
-    date_pattern = r"(\d{2}/\d{2}/\d{4})"
     for col in columns:
         dates = re.findall(date_pattern, str(col))
         if len(dates) >= 2:
@@ -35,7 +34,19 @@ def load_all_data(ratings_file, caseload_file, namelist_file):
 
     ratings_df = pd.read_csv(ratings_file, encoding=ratings_encoding)
     namelist_df = pd.read_csv(namelist_file, encoding=namelist_encoding)
-    caseload_df = pd.read_excel(caseload_file, skiprows=6)  # forced to correct header row
+
+    for skip in range(6, 21):
+        print(f"Trying skiprows={skip}:")
+        try:
+            df_try = pd.read_excel(caseload_file, skiprows=skip)
+            print("Columns seen:", list(df_try.columns))
+            if any("Assigned" in str(col) and "to" in str(col) for col in df_try.columns):
+                caseload_df = df_try
+                break
+        except Exception as e:
+            print(f"Error reading with skiprows={skip}: {e}")
+    else:
+        raise ValueError("Could not locate the correct header row in case_load.xlsx")
 
     caseload_df.columns = caseload_df.columns.map(str)
     date_start_raw, date_end_raw = extract_dates_from_columns(caseload_df.columns)
