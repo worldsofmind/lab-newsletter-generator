@@ -6,7 +6,9 @@ import re
 def detect_header_and_load_excel(file):
     for header in range(10):
         df_try = pd.read_excel(file, skiprows=header)
-        if any("Officer" in str(col) or "LO/LE" in str(col) for col in df_try.columns):
+        print(f"Trying skiprows={header}:")
+        print("Columns seen:", [str(col) for col in df_try.columns])
+        if any("Officer" in str(col) or "LO/LE" in str(col) or "In-house" in str(col) for col in df_try.columns):
             file.seek(0)
             return pd.read_excel(file, skiprows=header)
     raise ValueError("Failed to find header row in case_load file.")
