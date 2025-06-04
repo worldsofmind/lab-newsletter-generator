@@ -1,28 +1,38 @@
-from jinja2 import Environment, FileSystemLoader
+
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 import os
+import pdfkit
 from premailer import transform
-from html2image import Html2Image
 
-env = Environment(loader=FileSystemLoader("templates"))
+TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates")
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "generated")
 
-def render_newsletters(officer_reports, template_file="newsletter.html", output_dir="generated"):
-    os.makedirs(output_dir, exist_ok=True)
-    template = env.get_template(template_file)
-    hti = Html2Image()
+env = Environment(
+    loader=FileSystemLoader(TEMPLATE_DIR),
+    autoescape=select_autoescape(['html', 'xml'])
+)
 
-    for report in officer_reports:
-        name_display = f"{report['name']}"
-        filename_base = name_display.replace(" ", "_").replace("(", "").replace(")", "")
-        html_out = template.render(**report)
-        html_out = transform(html_out)
+def render_newsletters(reports):
+    template = env.get_template("newsletter.html")
 
-        html_path = os.path.join(output_dir, f"{filename_base}.html")
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
+
+    for report in reports:
+        html_content = template.render(report)
+        styled_html = transform(html_content)
+
+        officer_safe_name = report['name'].replace(" ", "_").replace("/", "_")
+        html_path = os.path.join(OUTPUT_DIR, f"{officer_safe_name}.html")
+        pdf_path = os.path.join(OUTPUT_DIR, f"{officer_safe_name}.pdf")
+
         with open(html_path, "w", encoding="utf-8") as f:
-            f.write(html_out)
+            f.write(styled_html)
 
-        hti.screenshot(
-            html_str=html_out,
-            save_as=f"{filename_base}.png",
-            size=(800, 1000),
-            output_path=output_dir
-        )
+        # Optional: Generate PDF from HTML (requires wkhtmltopdf installed)
+        try:
+            pdfkit.from_file(html_path, pdf_path)
+        except Exception as e:
+            print(f"Failed to generate PDF for {report['name']}: {e}")
+
+    return f"Newsletters saved to: {OUTPUT_DIR}"
