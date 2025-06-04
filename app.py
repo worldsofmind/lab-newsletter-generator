@@ -9,9 +9,9 @@ st.set_page_config(page_title="📬 LAB Officer Newsletter Generator", layout="w
 # Sidebar file uploads
 with st.sidebar:
     st.title("📂 Upload Files")
-    ratings_file = st.file_uploader("Upload `ratings.csv`", type="csv")
-    caseload_file = st.file_uploader("Upload `case_load.xlsx`", type=["xls", "xlsx", "csv"])
-    namelist_file = st.file_uploader("Upload `namelist.csv`", type="csv")
+    ratings_file = st.file_uploader("Upload ratings.csv", type="csv")
+    caseload_file = st.file_uploader("Upload case_load.csv (CSV format only)", type="csv")
+    namelist_file = st.file_uploader("Upload namelist.csv", type="csv")
 
 if ratings_file and caseload_file and namelist_file:
     try:
