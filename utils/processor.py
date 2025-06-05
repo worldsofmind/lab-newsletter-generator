@@ -6,6 +6,7 @@ def compute_officer_stats(row, caseload_df, ratings_df, period, all_caseload_df)
     # Clean up column headers before use
     caseload_df.columns = caseload_df.columns.map(lambda x: re.sub(r"\s+", " ", str(x)).strip())
     all_caseload_df.columns = all_caseload_df.columns.map(lambda x: re.sub(r"\s+", " ", str(x)).strip())
+    ratings_df.columns = ratings_df.columns.map(lambda x: re.sub(r"\s+", " ", str(x)).strip())
 
     name = row["Name"]
     abbreviation = row["Abbreviation"]
@@ -24,7 +25,7 @@ def compute_officer_stats(row, caseload_df, ratings_df, period, all_caseload_df)
             _get_value(officer_data, "In-house Cases NFA- 07 and NFA-12 Between 08/05/2024 to 02/08/2024")
             + _get_value(officer_data, "In-house Cases NFA- others Between 08/05/2024 to 02/08/2024")
         ),
-        "inhouse_closed": "N/A",  # no closed column provided
+        "inhouse_closed": "N/A",
         "inhouse_end": _get_value(officer_data, "In-house Caseload as at 02/08/2024"),
 
         "assigned_opening": _get_value(officer_data, "Assigned Caseload as at 08/05/202 4"),
@@ -37,7 +38,6 @@ def compute_officer_stats(row, caseload_df, ratings_df, period, all_caseload_df)
         "assigned_end": _get_value(officer_data, "Assigned Caseload as at 02/08/2024"),
     }
 
-    # Averages
     stats.update({
         "avg_inhouse_opening": round(all_caseload_df["In-house Caseload as at 08/05/2024"].mean(), 1),
         "avg_inhouse_added": round(all_caseload_df["Additional In-house Cases Between 08/05/2024 to 02/08/2024"].mean(), 1),
@@ -51,7 +51,7 @@ def compute_officer_stats(row, caseload_df, ratings_df, period, all_caseload_df)
 
     # Survey Ratings
     questions = [col for col in ratings_df.columns if "LAB" in col and "Indicator" not in col]
-    survey = ratings_df[ratings_df["LO"] == abbreviation]
+    survey = ratings_df[ratings_df["Abbreviation"] == abbreviation]
     if not survey.empty:
         survey_scores = {
             q: round(survey[q].dropna().astype(float).mean(), 1)
@@ -64,14 +64,14 @@ def compute_officer_stats(row, caseload_df, ratings_df, period, all_caseload_df)
 
     # Case Ratings
     def extract_case_ratings(df, assigned):
-        filtered = df[(df["LO"] == abbreviation) & (df["ASSIGNED OUT INDICATOR"] == assigned)]
+        filtered = df[(df["Abbreviation"] == abbreviation) & (df["ASSIGNED OUT INDICATOR"] == assigned)]
         ratings = []
         for _, r in filtered.iterrows():
             scores = [r[q] for q in questions if pd.notna(r[q])]
             if scores:
                 ratings.append({
                     "case_ref": r["CASE REF NO"],
-                    "applicant": r["NAME"],
+                    "applicant": r["APPLICANT"],
                     "score": round(pd.Series(scores).astype(float).mean(), 1)
                 })
         return ratings
