@@ -1,19 +1,26 @@
+
 import pandas as pd
 import re
 from utils.encoding import detect_encoding
 
 def extract_dates_from_columns(columns):
     date_pattern = r"(\d{2}/\d{2}/\d{4})"
-    extracted_dates = []
-    for col in columns:
-        matches = re.findall(date_pattern, str(col))
-        if matches:
-            extracted_dates.extend(matches)
-    if len(extracted_dates) >= 2:
-        # Return first and last detected dates in sorted order
-        unique_dates = sorted(set(pd.to_datetime(extracted_dates, dayfirst=True)))
-        return unique_dates[0].strftime('%d/%m/%Y'), unique_dates[-1].strftime('%d/%m/%Y')
-    raise ValueError("❌ Could not infer start and end dates from column headers.")
+    found = re.findall(date_pattern, " ".join(columns))
+    if len(found) >= 2:
+        try:
+            date_start = datetime.strptime(found[0], "%d/%m/%Y")
+            date_end = datetime.strptime(found[1], "%d/%m/%Y")
+            return {
+                "date_start": found[0],
+                "date_end": found[1],
+                "date_start_verbose": date_start.strftime("%d %B %Y").upper(),
+                "date_end_verbose": date_end.strftime("%d %B %Y").upper(),
+                "month_start": date_start.strftime("%b").upper(),
+                "month_end": date_end.strftime("%b").upper()
+            }
+        except Exception:
+            pass
+    raise ValueError("Could not extract two dates from column headers.")
 
 def detect_header_and_load_csv(file):
     encoding = detect_encoding(file)
@@ -21,7 +28,7 @@ def detect_header_and_load_csv(file):
     for skip in range(0, 15):
         try:
             df = pd.read_csv(file, skiprows=skip, encoding=encoding)
-            if 'Name' in df.columns:
+            if 'Name' in df.columns or 'name' in df.columns:
                 return df
         except Exception:
             continue
@@ -38,8 +45,5 @@ def load_all_data(ratings_file, caseload_file, namelist_file):
     caseload_df = detect_header_and_load_csv(caseload_file)
     caseload_df.columns = caseload_df.columns.map(str)
 
-    date_start_raw, date_end_raw = extract_dates_from_columns(caseload_df.columns)
-    return ratings_df, caseload_df, namelist_df, {
-        "date_start": date_start_raw,
-        "date_end": date_end_raw
-    }
+    period = extract_dates_from_columns(caseload_df.columns)
+    return ratings_df, caseload_df, namelist_df, period
