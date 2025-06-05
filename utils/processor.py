@@ -1,98 +1,85 @@
 
 import pandas as pd
-import numpy as np
+from collections import defaultdict
 
-def clean_column_names(df):
-    df.columns = df.columns.str.replace("\n", " ", regex=True).str.strip()
-    return df
+def compute_officer_stats(row, caseload_df, ratings_df, period, all_caseload_df):
+    name = row["name"]
+    abbreviation = row["abbreviation"]
+    function = row["Function"]
 
-def extract_case_stats(row, caseload_df, period, all_caseload_df):
-    start, end = period["date_start"], period["date_end"]
-    caseload_df = clean_column_names(caseload_df)
-
-    name = row["Name"]
-    abbreviation = row["Abbreviation"]
-
-    def safe_get(col):
-        return caseload_df.loc[caseload_df["Name"] == name, col].values[0] if col in caseload_df.columns else "N/A"
+    officer_data = caseload_df[caseload_df["Name"].str.strip() == name]
 
     stats = {
         "name": name,
         "abbreviation": abbreviation,
-        "inhouse_opening": safe_get(f"In-house Caseload as at {start}"),
-        "inhouse_added": safe_get(f"In-house Caseload Added Between {start} to {end}"),
-        "inhouse_nfa": safe_get(f"In-house NFA Between {start} to {end}"),
-        "inhouse_closed": safe_get(f"In-house Closed Between {start} to {end}"),
-        "inhouse_end": safe_get(f"In-house Caseload as at {end}"),
-        "assigned_opening": safe_get(f"Assigned Caseload as at {start}"),
-        "assigned_added": safe_get(f"Assigned Caseload Added Between {start} to {end}"),
-        "assigned_nfa": safe_get(f"Assigned NFA Between {start} to {end}"),
-        "assigned_closed": safe_get(f"Assigned Closed Between {start} to {end}"),
-        "assigned_end": safe_get(f"Assigned Caseload as at {end}"),
-        "avg_inhouse_opening": safe_get("Average In-house Caseload as at Start"),
-        "avg_inhouse_added": safe_get("Average In-house Caseload Added"),
-        "avg_inhouse_closed": safe_get("Average In-house Caseload Closed"),
-        "avg_inhouse_end": safe_get("Average In-house Caseload as at End"),
-        "avg_assigned_opening": safe_get("Average Assigned Caseload as at Start"),
-        "avg_assigned_added": safe_get("Average Assigned Caseload Added"),
-        "avg_assigned_closed": safe_get("Average Assigned Caseload Closed"),
-        "avg_assigned_end": safe_get("Average Assigned Caseload as at End"),
+        "function": function,
+        "period": period,
+        "inhouse_opening": _get_value(officer_data, "In-house Caseload as at 08/05/2024"),
+        "inhouse_added": _get_value(officer_data, "Additional In-house Cases Between 08/05/2024 to 02/08/2024"),
+        "inhouse_nfa": (
+            _get_value(officer_data, "In-house Cases NFA- 07 and NFA-12 Between 08/05/2024 to 02/08/2024")
+            + _get_value(officer_data, "In-house Cases NFA- others Between 08/05/2024 to 02/08/2024")
+        ),
+        "inhouse_closed": "N/A",  # no closed column provided
+        "inhouse_end": _get_value(officer_data, "In-house Caseload as at 02/08/2024"),
+
+        "assigned_opening": _get_value(officer_data, "Assigned Caseload as at 08/05/202 4"),
+        "assigned_added": _get_value(officer_data, "Additional Assigned Cases Between 08/05/2024 to 02/08/2024"),
+        "assigned_nfa": (
+            _get_value(officer_data, "Assigned Cases NFA- 07 Between 08/05/2024 to 02/08/2024")
+            + _get_value(officer_data, "Assigned Cases NFA- others Between 08/05/2024 to 02/08/2024")
+        ),
+        "assigned_closed": "N/A",  # no closed column provided
+        "assigned_end": _get_value(officer_data, "Assigned Caseload as at 02/08/2024"),
     }
-    return stats
 
-def extract_ratings(row, ratings_df):
-    name = row["Name"]
-    relevant = ratings_df[ratings_df["Name"] == name]
+    # Averages for context
+    stats.update({
+        "avg_inhouse_opening": round(all_caseload_df["In-house Caseload as at 08/05/2024"].mean(), 1),
+        "avg_inhouse_added": round(all_caseload_df["Additional In-house Cases Between 08/05/2024 to 02/08/2024"].mean(), 1),
+        "avg_inhouse_closed": "N/A",
+        "avg_inhouse_end": round(all_caseload_df["In-house Caseload as at 02/08/2024"].mean(), 1),
+        "avg_assigned_opening": round(all_caseload_df["Assigned Caseload as at 08/05/202 4"].mean(), 1),
+        "avg_assigned_added": round(all_caseload_df["Additional Assigned Cases Between 08/05/2024 to 02/08/2024"].mean(), 1),
+        "avg_assigned_closed": "N/A",
+        "avg_assigned_end": round(all_caseload_df["Assigned Caseload as at 02/08/2024"].mean(), 1),
+    })
 
-    survey_questions = [
-        "I am overall satisfied with LAB’s services",
-        "My lawyer understood my concerns and responded appropriately",
-        "The advice and information provided were helpful",
-        "The process was explained clearly to me",
-        "I felt respected and listened to",
-        "The services provided met my expectations",
-        "I would recommend LAB’s services to others"
-    ]
+    # Survey Results
+    questions = [col for col in ratings_df.columns if "LAB" in col and "Indicator" not in col]
+    survey = ratings_df[ratings_df["LO"] == abbreviation]
+    if not survey.empty:
+        survey_scores = {
+            q: round(survey[q].dropna().astype(float).mean(), 1)
+            for q in questions
+        }
+    else:
+        survey_scores = {}
 
-    survey_scores = {}
-    for q in survey_questions:
-        if q in relevant.columns:
-            scores = pd.to_numeric(relevant[q], errors='coerce').dropna()
-            if not scores.empty:
-                survey_scores[q] = round(scores.mean(), 1)
+    stats["survey_ratings"] = survey_scores
 
-    has_survey = len(survey_scores) > 0
-
-    def extract_case_ratings(indicator_value):
-        cases = relevant[relevant["ASSIGNED OUT INDICATOR"] == indicator_value]
+    # Ratings
+    def extract_case_ratings(df, assigned):
+        filtered = df[(df["LO"] == abbreviation) & (df["ASSIGNED OUT INDICATOR"] == assigned)]
         ratings = []
-        for _, row in cases.iterrows():
-            row_scores = [pd.to_numeric(row[q], errors='coerce') for q in survey_questions if q in row and pd.notna(row[q])]
-            if row_scores:
-                avg = round(np.nanmean(row_scores), 1)
+        for _, r in filtered.iterrows():
+            scores = [r[q] for q in questions if pd.notna(r[q])]
+            if scores:
                 ratings.append({
-                    "case_ref": row.get("CASE REF NO", "N/A"),
-                    "applicant": row.get("APPLICANT", "N/A"),
-                    "score": avg
+                    "case_ref": r["CASE REF NO"],
+                    "applicant": r["NAME"],
+                    "score": round(pd.Series(scores).astype(float).mean(), 1)
                 })
         return ratings
 
-    inhouse_ratings = extract_case_ratings("N") + extract_case_ratings("") + extract_case_ratings(np.nan)
-    assigned_ratings = extract_case_ratings("Y")
+    stats["inhouse_case_ratings"] = extract_case_ratings(ratings_df, "N")
+    stats["assigned_case_ratings"] = extract_case_ratings(ratings_df, "Y")
 
-    return survey_scores if has_survey else None, inhouse_ratings, assigned_ratings
-
-def compute_officer_stats(row, caseload_df, ratings_df, period, all_caseload_df):
-    stats = extract_case_stats(row, caseload_df, period, all_caseload_df)
-    survey, inhouse, assigned = extract_ratings(row, ratings_df)
-
-    stats["survey_ratings"] = survey or []
-    stats["inhouse_case_ratings"] = inhouse
-    stats["assigned_case_ratings"] = assigned
     return stats
 
-def process_all_officers(ratings_df, caseload_df, namelist_df, period):
-    return [
-        compute_officer_stats(row, caseload_df, ratings_df, period, caseload_df)
-        for _, row in namelist_df.iterrows()
-    ]
+def _get_value(df, col, default=0):
+    try:
+        val = df[col].values[0]
+        return int(val) if not pd.isna(val) else default
+    except Exception:
+        return default
