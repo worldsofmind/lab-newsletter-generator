@@ -1,82 +1,53 @@
 
 import streamlit as st
 import pandas as pd
-import zipfile
-import os
+import datetime
 from utils.data_loader import load_all_data
 from utils.processor import compute_officer_stats
 from utils.renderer import render_newsletters
-
-GENERATED_DIR = os.path.join(os.path.dirname(__file__), "generated")
-os.makedirs(GENERATED_DIR, exist_ok=True)
+import os
 
 st.set_page_config(page_title="LAB Officer Newsletter Generator", layout="centered")
 st.title("📬 LAB Officer Newsletter Generator")
 
+# --- SIDEBAR FILE UPLOADS ---
 with st.sidebar:
     st.header("📂 Upload Files")
-    ratings_file = st.file_uploader("Upload `ratings.csv`", type=["csv"])
-    caseload_file = st.file_uploader("Upload `case_load.csv`", type=["csv"])
-    namelist_file = st.file_uploader("Upload `namelist.csv`", type=["csv"])
+    ratings_file = st.file_uploader("Upload `ratings.csv`", type="csv")
+    caseload_file = st.file_uploader("Upload `case_load.csv`", type="csv")
+    namelist_file = st.file_uploader("Upload `namelist.csv`", type="csv")
 
+# --- MAIN LOGIC ---
 if ratings_file and caseload_file and namelist_file:
     try:
-        ratings_df, caseload_df, namelist_df, period = load_all_data(ratings_file, caseload_file, namelist_file)
+        with st.spinner("Processing data..."):
+            ratings_df, caseload_df, namelist_df, period = load_all_data(ratings_file, caseload_file, namelist_file)
 
-        # Select mode
-        mode = st.radio("Select generation mode", ["Generate by officer", "Generate all (batch)"])
-        selected_abbrev = None
+            all_reports = []
+            for _, officer_row in namelist_df.iterrows():
+                officer_report = compute_officer_stats(officer_row, caseload_df, ratings_df, period)
+                all_reports.append(officer_report)
 
-        if mode == "Generate by officer":
-            officer_options = namelist_df["Abbreviation"].tolist()
-            selected_abbrev = st.selectbox("Select Officer Abbreviation", officer_options)
-            generate_button = st.button("Generate Officer Report")
-        else:
-            generate_button = st.button("Generate All Reports")
+            output_dir = Path("output")
+            output_dir.mkdir(exist_ok=True)
+            render_newsletters(all_reports, output_dir)
 
-        if generate_button:
-            reports = []
-
-            if mode == "Generate by officer" and selected_abbrev:
-                officer_row = namelist_df[namelist_df["Abbreviation"] == selected_abbrev].iloc[0]
-                report = compute_officer_stats(officer_row, caseload_df, ratings_df, period, caseload_df)
-                reports.append(report)
-            else:
-                for _, officer_row in namelist_df.iterrows():
-                    report = compute_officer_stats(officer_row, caseload_df, ratings_df, period, caseload_df)
-                    reports.append(report)
-
-            render_newsletters(reports)
-            st.success("✅ Newsletters generated successfully.")
-
-            for report in reports:
-                file_name = f"{report['abbreviation']}_Newsletter.html"
-                file_path = os.path.join(GENERATED_DIR, file_name)
-                if os.path.exists(file_path):
-                    with open(file_path, "rb") as f:
-                        st.download_button(
-                            label=f"Download {file_name}",
-                            data=f,
-                            file_name=file_name,
-                            mime="text/html"
-                        )
-
-            if mode == "Generate all (batch)":
-                zip_path = os.path.join(GENERATED_DIR, "all_newsletters.zip")
-                with zipfile.ZipFile(zip_path, "w") as zipf:
-                    for report in reports:
-                        file_name = f"{report['abbreviation']}_Newsletter.html"
-                        file_path = os.path.join(GENERATED_DIR, file_name)
-                        zipf.write(file_path, arcname=file_name)
-                with open(zip_path, "rb") as f:
-                    st.download_button(
-                        label="📦 Download All Newsletters (.zip)",
-                        data=f,
-                        file_name="all_newsletters.zip",
-                        mime="application/zip"
-                    )
+        st.success("✅ Newsletters generated successfully.")
+        for report in all_reports:
+            name = report['name']
+            abbreviation = report['abbreviation']
+            file_path = output_dir / f"{abbreviation}_Newsletter.html"
+            if file_path.exists():
+                with open(file_path, "r", encoding="utf-8") as f:
+                    html_content = f.read()
+                st.download_button(
+                    label=f"📩 Download {abbreviation}_Newsletter.html",
+                    data=html_content,
+                    file_name=f"{abbreviation}_Newsletter.html",
+                    mime="text/html"
+                )
 
     except Exception as e:
         st.error(f"❌ An error occurred during processing: {e}")
 else:
-    st.info("👈 Upload all 3 files to begin.")
+    st.info("📥 Please upload all three files to begin.")
