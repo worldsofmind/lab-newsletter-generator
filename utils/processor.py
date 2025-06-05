@@ -84,7 +84,3 @@ def process_all_officers(ratings_df, caseload_df, namelist_df, period):
         compute_officer_stats(row, caseload_df, ratings_df, period, caseload_df)
         for _, row in namelist_df.iterrows()
     ]
-    return [
-        compute_officer_stats(row, caseload_df, ratings_df, period, caseload_df)
-        for _, row in namelist_df.iterrows()
-    ]
