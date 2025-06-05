@@ -4,9 +4,9 @@ import asyncio
 from jinja2 import Environment, FileSystemLoader
 from pyppeteer import launch
 
-# Load newsletter.html from the parent directory of utils/
-TEMPLATE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-OUTPUT_DIR = os.path.join(TEMPLATE_DIR, "generated")
+# Point to the templates directory explicitly
+TEMPLATE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates"))
+OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "generated")
 
 env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
 template = env.get_template("newsletter.html")
