@@ -46,3 +46,17 @@ if ratings_file and caseload_file and namelist_file:
 
     except Exception as e:
         st.error(f"❌ An error occurred during processing: {e}")
+
+import glob
+import os
+
+st.markdown("### 📥 Download Newsletters")
+generated_files = glob.glob("generated/*.html") + glob.glob("generated/*.png")
+for file_path in generated_files:
+    with open(file_path, "rb") as f:
+        st.download_button(
+            label=f"Download {os.path.basename(file_path)}",
+            data=f,
+            file_name=os.path.basename(file_path),
+            mime="application/octet-stream"
+        )
