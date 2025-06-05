@@ -3,7 +3,7 @@ import pandas as pd
 from collections import defaultdict
 
 def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_caseload_df):
-    officer_name = officer_row["name"].strip().lower()
+    officer_name = officer_row["Name"].strip().lower()
     stats = defaultdict(lambda: "N/A")
 
     def _get_value(df_row, col):
@@ -51,7 +51,7 @@ def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_cas
         col_name = col.format(**period)
         stats[key] = avg(col_name) if col_name in all_caseload_df.columns else "N/A"
 
-    # Survey Ratings (Q1 to Q7)
+    # Survey Ratings
     ratings_df['LO'] = ratings_df['LO'].astype(str).str.strip().str.lower()
     ratings_df['LE'] = ratings_df['LE'].astype(str).str.strip().str.lower()
     ratings = ratings_df[
@@ -69,7 +69,7 @@ def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_cas
     else:
         stats["survey_ratings"] = {}
 
-    # Case ratings (Q1-Q7 average by type)
+    # Case ratings (in-house / assigned)
     def case_ratings(assigned):
         filtered = ratings[ratings["ASSIGNED OUT INDICATOR"].astype(str).str.strip().str.lower() == assigned]
         if filtered.empty:
@@ -90,9 +90,9 @@ def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_cas
     stats["inhouse_case_ratings"] = case_ratings("no")
     stats["assigned_case_ratings"] = case_ratings("yes")
 
-    stats["name"] = officer_row["name"]
-    stats["abbreviation"] = officer_row.get("abbreviation", "")
-    stats["function"] = officer_row.get("function", "")
+    stats["name"] = officer_row["Name"]
+    stats["abbreviation"] = officer_row.get("Abbreviation", "")
+    stats["function"] = officer_row.get("self_type", "")
     stats["period"] = period
     return stats
 
