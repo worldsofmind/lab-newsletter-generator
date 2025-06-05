@@ -3,14 +3,14 @@ import pandas as pd
 from collections import defaultdict
 
 def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_caseload_df):
-    officer_name = officer_row["name"]
+    officer_name = officer_row["name"].strip().lower()
     stats = defaultdict(lambda: "N/A")
 
     def _get_value(df_row, col):
         return pd.to_numeric(df_row.get(col, 0), errors="coerce")
 
-    # Find matching row in case load
-    case_row = case_load_df[case_load_df["Name"].str.strip().str.lower() == officer_name.strip().lower()]
+    # Match row from case_load
+    case_row = case_load_df[case_load_df["Name"].str.strip().str.lower() == officer_name]
     case_row = case_row.iloc[0] if not case_row.empty else pd.Series(dtype=object)
 
     def get_stat(col_pattern):
@@ -33,7 +33,7 @@ def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_cas
     stats["assigned_removed"] = get_stat("Total Removed Assigned Cases Between {date_start} to {date_end}")
     stats["assigned_reassigned"] = max(stats["assigned_removed"] - stats["assigned_nfa"], 0)
 
-    # LO averages
+    # Averages
     def avg(col_name):
         values = pd.to_numeric(all_caseload_df[col_name], errors="coerce").dropna()
         return round(values.mean(), 1) if not values.empty else "N/A"
@@ -51,31 +51,46 @@ def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_cas
         col_name = col.format(**period)
         stats[key] = avg(col_name) if col_name in all_caseload_df.columns else "N/A"
 
-    # Ratings (7-question averages)
-    ratings = ratings_df[ratings_df["name"].str.lower() == officer_name.lower()]
-    survey = ratings[[col for col in ratings.columns if col.startswith("Q")]] if not ratings.empty else pd.DataFrame()
+    # Survey Ratings (Q1 to Q7)
+    ratings_df['LO'] = ratings_df['LO'].astype(str).str.strip().str.lower()
+    ratings_df['LE'] = ratings_df['LE'].astype(str).str.strip().str.lower()
+    ratings = ratings_df[
+        (ratings_df["LO"] == officer_name) |
+        (ratings_df["LE"] == officer_name)
+    ]
 
-    if not survey.empty:
+    survey_cols = [col for col in ratings.columns if col.startswith("Q") or "satisfied" in col.lower()]
+    if not ratings.empty:
+        survey = ratings[survey_cols]
         stats["survey_ratings"] = {
-            col: round(survey[col].mean(), 1) for col in survey.columns if pd.api.types.is_numeric_dtype(survey[col])
+            col.strip(): round(survey[col].mean(), 1)
+            for col in survey.columns if pd.api.types.is_numeric_dtype(survey[col])
         }
     else:
         stats["survey_ratings"] = {}
 
-    def case_ratings(prefix):
-        rated = ratings[ratings["Type"].str.lower() == prefix] if "Type" in ratings.columns else pd.DataFrame()
-        rated = rated.copy()
-        rated["score"] = rated[[c for c in ratings.columns if c.startswith("Q")]].mean(axis=1)
+    # Case ratings (Q1-Q7 average by type)
+    def case_ratings(assigned):
+        filtered = ratings[ratings["ASSIGNED OUT INDICATOR"].astype(str).str.strip().str.lower() == assigned]
+        if filtered.empty:
+            return []
+        question_cols = [col for col in filtered.columns if col.startswith("Q") or "satisfied" in col.lower()]
+        filtered = filtered.copy()
+        filtered["score"] = filtered[question_cols].mean(axis=1)
         return [
-            {"case_ref": row["CASE REF NO"], "applicant": row["Applicant"], "score": round(row["score"], 1)}
-            for _, row in rated.iterrows()
-            if pd.notnull(row.get("CASE REF NO")) and pd.notnull(row.get("Applicant"))
-        ] if not rated.empty else []
+            {
+                "case_ref": row.get("CASE REF NO", "NA"),
+                "applicant": row.get("NAME", "NA"),
+                "score": round(row["score"], 1)
+            }
+            for _, row in filtered.iterrows()
+            if pd.notnull(row.get("CASE REF NO")) and pd.notnull(row.get("NAME"))
+        ]
 
-    stats["inhouse_case_ratings"] = case_ratings("in-house")
-    stats["assigned_case_ratings"] = case_ratings("assigned")
+    stats["inhouse_case_ratings"] = case_ratings("no")
+    stats["assigned_case_ratings"] = case_ratings("yes")
 
-    stats["name"] = officer_name
+    stats["name"] = officer_row["name"]
     stats["abbreviation"] = officer_row.get("abbreviation", "")
     stats["function"] = officer_row.get("function", "")
     stats["period"] = period
