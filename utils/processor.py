@@ -54,7 +54,7 @@ def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_cas
     stats["inhouse_reassigned"] = 11  # TEMP fixed since it's unclear in dataset
 
     # Assigned
-    stats["assigned_opening"] = get_stat(f"Assigned Caseload as at.*{ds}")
+    stats["assigned_opening"] = get_stat(f"Assigned Caseload as at.*{ds[:9].replace("/", "[\\s/]*")}")
     stats["assigned_end"] = get_stat(f"Assigned Caseload as at.*{de}")
     stats["assigned_added"] = get_stat(f"Additional Assigned Cases Between.*{ds}.*{de}")
     na1 = get_stat(f"Assigned Cases NFA- 07 Between.*{ds}.*{de}")
