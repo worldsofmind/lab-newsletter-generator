@@ -51,17 +51,16 @@ def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_cas
         col_name = col.format(**period)
         stats[key] = avg(col_name) if col_name in all_caseload_df.columns else "N/A"
 
-    # Survey Ratings
-    ratings_df['LO'] = ratings_df['LO'].astype(str).str.strip().str.lower()
-    ratings_df['LE'] = ratings_df['LE'].astype(str).str.strip().str.lower()
-    ratings = ratings_df[
-        (ratings_df["LO"] == officer_name) |
-        (ratings_df["LE"] == officer_name)
-    ]
+    # Ratings logic using Name and ASSIGNED OUT INDICATOR
+    ratings_df.columns = ratings_df.columns.str.strip().str.lower()
+    ratings_df["name"] = ratings_df["name"].astype(str).str.strip().str.lower()
+    ratings_df["assigned out indicator"] = ratings_df["assigned out indicator"].astype(str).str.lower().str.strip()
+    matched_ratings = ratings_df[ratings_df["name"] == officer_name]
 
-    survey_cols = [col for col in ratings.columns if col.startswith("Q") or "satisfied" in col.lower()]
-    if not ratings.empty:
-        survey = ratings[survey_cols]
+    # Survey rating extraction
+    survey_cols = [col for col in ratings_df.columns if "lab case officers" in col or "satisfied" in col]
+    if not matched_ratings.empty:
+        survey = matched_ratings[survey_cols]
         stats["survey_ratings"] = {
             col.strip(): round(survey[col].mean(), 1)
             for col in survey.columns if pd.api.types.is_numeric_dtype(survey[col])
@@ -69,22 +68,21 @@ def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_cas
     else:
         stats["survey_ratings"] = {}
 
-    # Case ratings (in-house / assigned)
-    def case_ratings(assigned):
-        filtered = ratings[ratings["ASSIGNED OUT INDICATOR"].astype(str).str.strip().str.lower() == assigned]
+    def case_ratings(assigned_status):
+        filtered = matched_ratings[matched_ratings["assigned out indicator"] == assigned_status]
         if filtered.empty:
             return []
-        question_cols = [col for col in filtered.columns if col.startswith("Q") or "satisfied" in col.lower()]
+        question_cols = [col for col in filtered.columns if "lab case officers" in col or "satisfied" in col]
         filtered = filtered.copy()
         filtered["score"] = filtered[question_cols].mean(axis=1)
         return [
             {
-                "case_ref": row.get("CASE REF NO", "NA"),
-                "applicant": row.get("NAME", "NA"),
+                "case_ref": row.get("case ref no", "NA"),
+                "applicant": row.get("applicant", "NA"),
                 "score": round(row["score"], 1)
             }
             for _, row in filtered.iterrows()
-            if pd.notnull(row.get("CASE REF NO")) and pd.notnull(row.get("NAME"))
+            if pd.notnull(row.get("case ref no")) and pd.notnull(row.get("applicant"))
         ]
 
     stats["inhouse_case_ratings"] = case_ratings("no")
