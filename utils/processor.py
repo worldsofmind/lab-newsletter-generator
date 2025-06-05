@@ -1,62 +1,78 @@
 
-def compute_officer_stats(officer_row, caseload_df, ratings_df, namelist_df):
+import pandas as pd
+import numpy as np
+
+def compute_officer_stats(officer_row, case_df, ratings_df):
     officer_name = officer_row['name']
-    officer_abbr = officer_row['abbreviation']
-    officer_function = officer_row['function']
+    abbreviation = officer_row['abbreviation']
+    function = officer_row['Function']
+    period = {
+        "date_start": "08/05/2024",
+        "date_end": "02/08/2024",
+        "date_start_verbose": "8 May 2024",
+        "date_end_verbose": "2 Aug 2024",
+        "month_start": "May",
+        "month_end": "Aug"
+    }
 
-    # Filter case load for this officer
-    officer_cases = caseload_df[caseload_df['Abbreviation'] == officer_abbr]
-    if officer_cases.empty:
-        return {}
+    group_col = "Function"
+    peer_group = case_df[case_df[group_col] == function]
 
-    # Determine if the officer is an LO or LE
-    is_lo = officer_function.strip().upper() == 'LO'
-    group_key = 'LO' if is_lo else 'LE'
+    # Extract statistics for the officer
+    def safe_get(col):
+        return case_df.loc[case_df['Name'] == officer_name, col].values[0] if col in case_df.columns else 0
 
-    # Filter caseload by group for LO Avg or LE Avg calculations
-    group_cases = caseload_df[caseload_df['function'].str.upper().str.strip() == group_key]
+    def safe_mean(col):
+        return round(peer_group[col].mean(), 1) if col in peer_group.columns else 'N/A'
 
-    # Extract relevant values and safely convert to integers
-    def safe_int(val):
-        try:
-            return int(val)
-        except:
-            return 0
+    # In-house
+    inhouse_opening = safe_get('In-house Caseload as at 08/05/2024')
+    inhouse_added = safe_get('Additional In-house Cases Between 08/05/2024 to 02/08/2024')
+    inhouse_nfa_712 = safe_get('In-house Cases NFA- 07 and NFA-12 Between 08/05/2024 to 02/08/2024')
+    inhouse_nfa_others = safe_get('In-house Cases NFA- others Between 08/05/2024 to 02/08/2024')
+    inhouse_end = safe_get('In-house Caseload as at 02/08/2024')
+    inhouse_reassigned = max(inhouse_added - inhouse_nfa_712 - inhouse_nfa_others - (inhouse_end - inhouse_opening), 0)
+
+    # Assigned
+    assigned_opening = safe_get('Assigned Caseload as at 08/05/2024')
+    assigned_added = safe_get('Additional Assigned Cases Between 08/05/2024 to 02/08/2024')
+    assigned_nfa_712 = safe_get('Assigned Cases NFA- 07 Between 08/05/2024 to 02/08/2024')
+    assigned_nfa_others = safe_get('Assigned Cases NFA- others Between 08/05/2024 to 02/08/2024')
+    assigned_end = safe_get('Assigned Caseload as at 02/08/2024')
+    assigned_reassigned = max(assigned_added - assigned_nfa_712 - assigned_nfa_others - (assigned_end - assigned_opening), 0)
+
+    # Averages
+    def get_avg(col): return round(peer_group[col].mean(), 1) if col in peer_group.columns else 'N/A'
 
     stats = {
-        'inhouse_opening': safe_int(officer_cases['In-House Opening'].values[0]),
-        'assigned_opening': safe_int(officer_cases['Assigned Opening'].values[0]),
-        'inhouse_added': safe_int(officer_cases['In-House Additions'].values[0]),
-        'assigned_added': safe_int(officer_cases['Assigned Additions'].values[0]),
-        'inhouse_nfa': safe_int(officer_cases['In-House NFA'].values[0]),
-        'assigned_nfa': safe_int(officer_cases['Assigned NFA'].values[0]),
-        'inhouse_reassigned': safe_int(officer_cases['In-House Reassigned'].values[0]),
-        'assigned_reassigned': safe_int(officer_cases['Assigned Reassigned'].values[0]),
-        'inhouse_end': safe_int(officer_cases['In-House End'].values[0]),
-        'assigned_end': safe_int(officer_cases['Assigned End'].values[0]),
+        "name": officer_name,
+        "abbreviation": abbreviation,
+        "function": function,
+        "period": period,
+        "inhouse_opening": inhouse_opening,
+        "inhouse_added": inhouse_added,
+        "inhouse_nfa_712": inhouse_nfa_712,
+        "inhouse_nfa_others": inhouse_nfa_others,
+        "inhouse_reassigned": inhouse_reassigned,
+        "inhouse_end": inhouse_end,
+        "assigned_opening": assigned_opening,
+        "assigned_added": assigned_added,
+        "assigned_nfa_712": assigned_nfa_712,
+        "assigned_nfa_others": assigned_nfa_others,
+        "assigned_reassigned": assigned_reassigned,
+        "assigned_end": assigned_end,
+        "avg_inhouse_opening": get_avg('In-house Caseload as at 08/05/2024'),
+        "avg_inhouse_added": get_avg('Additional In-house Cases Between 08/05/2024 to 02/08/2024'),
+        "avg_inhouse_nfa_712": get_avg('In-house Cases NFA- 07 and NFA-12 Between 08/05/2024 to 02/08/2024'),
+        "avg_inhouse_nfa_others": get_avg('In-house Cases NFA- others Between 08/05/2024 to 02/08/2024'),
+        "avg_inhouse_reassigned": 'N/A',
+        "avg_inhouse_end": get_avg('In-house Caseload as at 02/08/2024'),
+        "avg_assigned_opening": get_avg('Assigned Caseload as at 08/05/2024'),
+        "avg_assigned_added": get_avg('Additional Assigned Cases Between 08/05/2024 to 02/08/2024'),
+        "avg_assigned_nfa_712": get_avg('Assigned Cases NFA- 07 Between 08/05/2024 to 02/08/2024'),
+        "avg_assigned_nfa_others": get_avg('Assigned Cases NFA- others Between 08/05/2024 to 02/08/2024'),
+        "avg_assigned_reassigned": 'N/A',
+        "avg_assigned_end": get_avg('Assigned Caseload as at 02/08/2024')
     }
-
-    # Compute averages across group
-    def avg(column):
-        vals = group_cases[column].apply(safe_int)
-        return round(vals.mean(), 1) if not vals.empty else 'N/A'
-
-    avg_stats = {
-        'avg_inhouse_opening': avg('In-House Opening'),
-        'avg_assigned_opening': avg('Assigned Opening'),
-        'avg_inhouse_added': avg('In-House Additions'),
-        'avg_assigned_added': avg('Assigned Additions'),
-        'avg_inhouse_nfa': avg('In-House NFA'),
-        'avg_assigned_nfa': avg('Assigned NFA'),
-        'avg_inhouse_reassigned': avg('In-House Reassigned'),
-        'avg_assigned_reassigned': avg('Assigned Reassigned'),
-        'avg_inhouse_end': avg('In-House End'),
-        'avg_assigned_end': avg('Assigned End')
-    }
-
-    stats.update(avg_stats)
-    stats['name'] = officer_name
-    stats['abbreviation'] = officer_abbr
-    stats['function'] = officer_function
 
     return stats
