@@ -2,6 +2,18 @@
 import pandas as pd
 from collections import defaultdict
 
+SURVEY_QUESTIONS = 
+[
+    "My LAB case officers made sufficient efforts to help me understand what was happening in my case",
+    "I got enough help from my LAB case officers when I needed to give them documents and information for my case",
+    "I am satisfied with what LAB has done to move my case along",
+    "The LAB officers handling my case were respectful and understanding",
+    "I knew what I could do if I could not pay LAB’s fees for the work done on my case (contribution)",
+    "I was able to communicate easily with the LAB officers handling my case",
+    "I am overall satisfied with LAB’s services"
+]
+
+
 def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_caseload_df):
     officer_name = officer_row["Name"].strip().lower()
     stats = defaultdict(lambda: "N/A")
@@ -9,7 +21,6 @@ def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_cas
     def _get_value(df_row, col):
         return pd.to_numeric(df_row.get(col, 0), errors="coerce")
 
-    # Match row from case_load
     case_row = case_load_df[case_load_df["Name"].str.strip().str.lower() == officer_name]
     case_row = case_row.iloc[0] if not case_row.empty else pd.Series(dtype=object)
 
@@ -17,7 +28,6 @@ def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_cas
         col_name = col_pattern.format(**period)
         return _get_value(case_row, col_name) if col_name in case_row else 0
 
-    # In-house stats
     stats["inhouse_opening"] = get_stat("In-house Caseload as at {date_start}")
     stats["inhouse_end"] = get_stat("In-house Caseload as at {date_end}")
     stats["inhouse_added"] = get_stat("Additional In-house Cases Between {date_start} to {date_end}")
@@ -25,7 +35,6 @@ def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_cas
     stats["inhouse_removed"] = get_stat("Total Removed In-house Cases Between {date_start} to {date_end}")
     stats["inhouse_reassigned"] = max(stats["inhouse_removed"] - stats["inhouse_nfa"], 0)
 
-    # Assigned stats
     stats["assigned_opening"] = get_stat("Assigned Caseload as at {date_start}")
     stats["assigned_end"] = get_stat("Assigned Caseload as at {date_end}")
     stats["assigned_added"] = get_stat("Additional Assigned Cases Between {date_start} to {date_end}")
@@ -33,12 +42,11 @@ def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_cas
     stats["assigned_removed"] = get_stat("Total Removed Assigned Cases Between {date_start} to {date_end}")
     stats["assigned_reassigned"] = max(stats["assigned_removed"] - stats["assigned_nfa"], 0)
 
-    # Averages
     def avg(col_name):
         values = pd.to_numeric(all_caseload_df[col_name], errors="coerce").dropna()
         return round(values.mean(), 1) if not values.empty else "N/A"
 
-    for key, col in {
+    avg_map = {
         "avg_inhouse_opening": "In-house Caseload as at {date_start}",
         "avg_inhouse_end": "In-house Caseload as at {date_end}",
         "avg_assigned_opening": "Assigned Caseload as at {date_start}",
@@ -47,34 +55,39 @@ def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_cas
         "avg_inhouse_nfa": "NFA In-house Cases Between {date_start} to {date_end}",
         "avg_assigned_added": "Additional Assigned Cases Between {date_start} to {date_end}",
         "avg_assigned_nfa": "NFA Assigned Cases Between {date_start} to {date_end}"
-    }.items():
+    }
+
+    for key, col in avg_map.items():
         col_name = col.format(**period)
         stats[key] = avg(col_name) if col_name in all_caseload_df.columns else "N/A"
 
-    # Ratings logic using Name and ASSIGNED OUT INDICATOR
     ratings_df.columns = ratings_df.columns.str.strip().str.lower()
     ratings_df["name"] = ratings_df["name"].astype(str).str.strip().str.lower()
     ratings_df["assigned out indicator"] = ratings_df["assigned out indicator"].astype(str).str.lower().str.strip()
     matched_ratings = ratings_df[ratings_df["name"] == officer_name]
 
-    # Survey rating extraction
-    survey_cols = [col for col in ratings_df.columns if "lab case officers" in col or "satisfied" in col]
-    if not matched_ratings.empty:
+    q_cols = [q.lower() for q in SURVEY_QUESTIONS]
+    survey_cols = [col for col in ratings_df.columns if col in q_cols]
+    display_q_map = {q.lower(): q for q in SURVEY_QUESTIONS}
+
+    if not matched_ratings.empty and survey_cols:
         survey = matched_ratings[survey_cols]
         stats["survey_ratings"] = {
-            col.strip(): round(survey[col].mean(), 1)
+            display_q_map[col]: round(survey[col].mean(), 1)
             for col in survey.columns if pd.api.types.is_numeric_dtype(survey[col])
         }
     else:
         stats["survey_ratings"] = {}
 
-    def case_ratings(assigned_status):
-        filtered = matched_ratings[matched_ratings["assigned out indicator"] == assigned_status]
+    def case_ratings(assigned_statuses):
+        filtered = matched_ratings[
+            matched_ratings["assigned out indicator"].isin(assigned_statuses)
+        ]
         if filtered.empty:
             return []
-        question_cols = [col for col in filtered.columns if "lab case officers" in col or "satisfied" in col]
+        score_cols = [col for col in filtered.columns if col in q_cols]
         filtered = filtered.copy()
-        filtered["score"] = filtered[question_cols].mean(axis=1)
+        filtered["score"] = filtered[score_cols].mean(axis=1)
         return [
             {
                 "case_ref": row.get("case ref no", "NA"),
@@ -85,8 +98,8 @@ def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_cas
             if pd.notnull(row.get("case ref no")) and pd.notnull(row.get("applicant"))
         ]
 
-    stats["inhouse_case_ratings"] = case_ratings("no")
-    stats["assigned_case_ratings"] = case_ratings("yes")
+    stats["inhouse_case_ratings"] = case_ratings(["no", "n"])
+    stats["assigned_case_ratings"] = case_ratings(["yes", "y"])
 
     stats["name"] = officer_row["Name"]
     stats["abbreviation"] = officer_row.get("Abbreviation", "")
