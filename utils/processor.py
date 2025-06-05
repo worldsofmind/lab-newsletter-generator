@@ -2,8 +2,7 @@
 import pandas as pd
 from collections import defaultdict
 
-SURVEY_QUESTIONS = 
-[
+SURVEY_QUESTIONS = [
     "My LAB case officers made sufficient efforts to help me understand what was happening in my case",
     "I got enough help from my LAB case officers when I needed to give them documents and information for my case",
     "I am satisfied with what LAB has done to move my case along",
@@ -12,7 +11,6 @@ SURVEY_QUESTIONS =
     "I was able to communicate easily with the LAB officers handling my case",
     "I am overall satisfied with LAB’s services"
 ]
-
 
 def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_caseload_df):
     officer_name = officer_row["Name"].strip().lower()
