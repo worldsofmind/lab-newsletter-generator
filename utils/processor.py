@@ -3,9 +3,9 @@ import pandas as pd
 from collections import defaultdict
 
 def compute_officer_stats(row, caseload_df, ratings_df, period, all_caseload_df):
-    name = row["name"]
-    abbreviation = row["abbreviation"]
-    function = row["Function"]
+    name = row["Name"]
+    abbreviation = row["Abbreviation"]
+    function = row["self_type"]
 
     officer_data = caseload_df[caseload_df["Name"].str.strip() == name]
 
@@ -33,7 +33,7 @@ def compute_officer_stats(row, caseload_df, ratings_df, period, all_caseload_df)
         "assigned_end": _get_value(officer_data, "Assigned Caseload as at 02/08/2024"),
     }
 
-    # Averages for context
+    # Averages
     stats.update({
         "avg_inhouse_opening": round(all_caseload_df["In-house Caseload as at 08/05/2024"].mean(), 1),
         "avg_inhouse_added": round(all_caseload_df["Additional In-house Cases Between 08/05/2024 to 02/08/2024"].mean(), 1),
@@ -45,7 +45,7 @@ def compute_officer_stats(row, caseload_df, ratings_df, period, all_caseload_df)
         "avg_assigned_end": round(all_caseload_df["Assigned Caseload as at 02/08/2024"].mean(), 1),
     })
 
-    # Survey Results
+    # Survey Ratings
     questions = [col for col in ratings_df.columns if "LAB" in col and "Indicator" not in col]
     survey = ratings_df[ratings_df["LO"] == abbreviation]
     if not survey.empty:
@@ -58,7 +58,7 @@ def compute_officer_stats(row, caseload_df, ratings_df, period, all_caseload_df)
 
     stats["survey_ratings"] = survey_scores
 
-    # Ratings
+    # Case Ratings
     def extract_case_ratings(df, assigned):
         filtered = df[(df["LO"] == abbreviation) & (df["ASSIGNED OUT INDICATOR"] == assigned)]
         ratings = []
