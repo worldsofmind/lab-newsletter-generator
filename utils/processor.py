@@ -1,97 +1,85 @@
 
 import pandas as pd
+import numpy as np
 from datetime import datetime
+import re
 
-def compute_officer_stats(officer_row, caseload_df, ratings_df, period, all_caseload_df):
-    name = officer_row["name_self"]
-    function = officer_row["function"]
-    relevant_df = caseload_df[caseload_df["Name"] == name]
+def parse_case_count(value):
+    try:
+        return int(value)
+    except:
+        return 0
 
-    if function not in ["LO", "LE"]:
-        return None
+def compute_case_stats(case_df, officer_name, officer_function, function_group, date_start, date_end):
+    df = case_df.copy()
+    df['Name'] = df['Name'].str.strip()
+    officer_df = df[df['Name'] == officer_name]
 
-    group_df = caseload_df[caseload_df["Function"] == function]
+    # Determine peer group
+    peer_df = df[df['Function'] == officer_function]
 
-    def safe_mean(series):
-        return round(series.dropna().astype(float).mean(), 1) if not series.dropna().empty else 0
+    # Section 1: Opening
+    inhouse_opening = parse_case_count(officer_df['In-house Caseload as at ' + date_start].values[0]) if not officer_df.empty else 0
+    assigned_opening = parse_case_count(officer_df['Assigned Caseload as at ' + date_start].values[0]) if not officer_df.empty else 0
+    avg_inhouse_opening = peer_df['In-house Caseload as at ' + date_start].apply(parse_case_count).mean()
+    avg_assigned_opening = peer_df['Assigned Caseload as at ' + date_start].apply(parse_case_count).mean()
 
-    def count_nfa(df, reasons, start_date, end_date, case_type):
-        mask = (
-            df["Closure Reason"].astype(str).isin(reasons) &
-            (df["Case Category"] == case_type) &
-            pd.to_datetime(df["Closure Date"], errors='coerce').between(start_date, end_date)
-        )
-        return df[mask].shape[0]
+    # Section 2: Changes in period
+    def get_stat(col):
+        return parse_case_count(officer_df[col].values[0]) if col in officer_df else 0
 
-    def count_nfa_other(df, exclude_reasons, start_date, end_date, case_type):
-        mask = (
-            ~df["Closure Reason"].astype(str).isin(exclude_reasons) &
-            (df["Case Category"] == case_type) &
-            pd.to_datetime(df["Closure Date"], errors='coerce').between(start_date, end_date)
-        )
-        return df[mask].shape[0]
+    inhouse_added = get_stat('In-house Additions')
+    inhouse_nfa_712 = get_stat('In-house NFA 7,12')
+    inhouse_nfa_others = get_stat('In-house NFA Others')
+    inhouse_reassigned = get_stat('In-house Reassigned')
 
-    def count_reassigned(df, case_type, start_date, end_date):
-        mask = (
-            (df["Case Category"] == case_type) &
-            (df["Reassigned"] == "Yes") &
-            pd.to_datetime(df["Reassign Date"], errors='coerce').between(start_date, end_date)
-        )
-        return df[mask].shape[0]
+    assigned_added = get_stat('Assigned Additions')
+    assigned_nfa_712 = get_stat('Assigned NFA 7,12')
+    assigned_nfa_others = get_stat('Assigned NFA Others')
+    assigned_reassigned = get_stat('Assigned Reassigned')
 
-    # Dynamic columns
-    inhouse_open_col = f"In-house Caseload as at {period['date_start']}"
-    assigned_open_col = f"Assigned Caseload as at {period['date_start']}"
-    inhouse_end_col = f"In-house Caseload as at {period['date_end']}"
-    assigned_end_col = f"Assigned Caseload as at {period['date_end']}"
-    new_inhouse_col = "New In-house Cases (May to Aug)"
-    new_assigned_col = "New Assigned Cases (May to Aug)"
+    def avg_stat(col):
+        return peer_df[col].apply(parse_case_count).mean() if col in peer_df.columns else 0
 
-    # Pull individual values
-    def extract(col, default=0):
-        return relevant_df[col].values[0] if col in relevant_df.columns and not relevant_df[col].empty else default
+    avg_inhouse_added = avg_stat('In-house Additions')
+    avg_inhouse_nfa_712 = avg_stat('In-house NFA 7,12')
+    avg_inhouse_nfa_others = avg_stat('In-house NFA Others')
+    avg_inhouse_reassigned = avg_stat('In-house Reassigned')
 
-    officer_stats = {
-        "name": name,
-        "abbreviation": officer_row["name_abbrev"],
-        "function": function,
-        "period": {
-            "date_start": period["date_start"],
-            "date_end": period["date_end"],
-            "date_start_verbose": period["date_start_verbose"],
-            "date_end_verbose": period["date_end_verbose"],
-            "month_start": period["month_start"],
-            "month_end": period["month_end"]
-        },
-        # 🟦 Opening values
-        "inhouse_opening": extract(inhouse_open_col),
-        "assigned_opening": extract(assigned_open_col),
-        # 🟨 In-period
-        "inhouse_added": extract(new_inhouse_col),
-        "assigned_added": extract(new_assigned_col),
-        "inhouse_nfa_712": count_nfa(all_caseload_df, ["7", "12"], period["date_start_dt"], period["date_end_dt"], "In-house"),
-        "inhouse_nfa_others": count_nfa_other(all_caseload_df, ["7", "12"], period["date_start_dt"], period["date_end_dt"], "In-house"),
-        "inhouse_reassigned": count_reassigned(all_caseload_df, "In-house", period["date_start_dt"], period["date_end_dt"]),
-        "assigned_nfa_712": count_nfa(all_caseload_df, ["7", "12"], period["date_start_dt"], period["date_end_dt"], "Assigned"),
-        "assigned_nfa_others": count_nfa_other(all_caseload_df, ["7", "12"], period["date_start_dt"], period["date_end_dt"], "Assigned"),
-        "assigned_reassigned": count_reassigned(all_caseload_df, "Assigned", period["date_start_dt"], period["date_end_dt"]),
-        # 🟩 Ending values
-        "inhouse_end": extract(inhouse_end_col),
-        "assigned_end": extract(assigned_end_col),
-        # Averages by function group
-        "avg_inhouse_opening": safe_mean(group_df[inhouse_open_col]) if inhouse_open_col in group_df else 0,
-        "avg_assigned_opening": safe_mean(group_df[assigned_open_col]) if assigned_open_col in group_df else 0,
-        "avg_inhouse_added": safe_mean(group_df[new_inhouse_col]) if new_inhouse_col in group_df else 0,
-        "avg_assigned_added": safe_mean(group_df[new_assigned_col]) if new_assigned_col in group_df else 0,
-        "avg_inhouse_end": safe_mean(group_df[inhouse_end_col]) if inhouse_end_col in group_df else 0,
-        "avg_assigned_end": safe_mean(group_df[assigned_end_col]) if assigned_end_col in group_df else 0,
-        # Placeholder for other averages
-        "avg_inhouse_nfa_712": 0,
-        "avg_inhouse_nfa_others": 0,
-        "avg_inhouse_reassigned": 0,
-        "avg_assigned_nfa_712": 0,
-        "avg_assigned_nfa_others": 0,
-        "avg_assigned_reassigned": 0
+    avg_assigned_added = avg_stat('Assigned Additions')
+    avg_assigned_nfa_712 = avg_stat('Assigned NFA 7,12')
+    avg_assigned_nfa_others = avg_stat('Assigned NFA Others')
+    avg_assigned_reassigned = avg_stat('Assigned Reassigned')
+
+    # Section 3: Closing
+    inhouse_end = parse_case_count(officer_df['In-house Caseload as at ' + date_end].values[0]) if not officer_df.empty else 0
+    assigned_end = parse_case_count(officer_df['Assigned Caseload as at ' + date_end].values[0]) if not officer_df.empty else 0
+    avg_inhouse_end = peer_df['In-house Caseload as at ' + date_end].apply(parse_case_count).mean()
+    avg_assigned_end = peer_df['Assigned Caseload as at ' + date_end].apply(parse_case_count).mean()
+
+    return {
+        'inhouse_opening': inhouse_opening,
+        'assigned_opening': assigned_opening,
+        'avg_inhouse_opening': round(avg_inhouse_opening, 1),
+        'avg_assigned_opening': round(avg_assigned_opening, 1),
+        'inhouse_added': inhouse_added,
+        'inhouse_nfa_712': inhouse_nfa_712,
+        'inhouse_nfa_others': inhouse_nfa_others,
+        'inhouse_reassigned': inhouse_reassigned,
+        'assigned_added': assigned_added,
+        'assigned_nfa_712': assigned_nfa_712,
+        'assigned_nfa_others': assigned_nfa_others,
+        'assigned_reassigned': assigned_reassigned,
+        'avg_inhouse_added': round(avg_inhouse_added, 1),
+        'avg_inhouse_nfa_712': round(avg_inhouse_nfa_712, 1),
+        'avg_inhouse_nfa_others': round(avg_inhouse_nfa_others, 1),
+        'avg_inhouse_reassigned': round(avg_inhouse_reassigned, 1),
+        'avg_assigned_added': round(avg_assigned_added, 1),
+        'avg_assigned_nfa_712': round(avg_assigned_nfa_712, 1),
+        'avg_assigned_nfa_others': round(avg_assigned_nfa_others, 1),
+        'avg_assigned_reassigned': round(avg_assigned_reassigned, 1),
+        'inhouse_end': inhouse_end,
+        'assigned_end': assigned_end,
+        'avg_inhouse_end': round(avg_inhouse_end, 1),
+        'avg_assigned_end': round(avg_assigned_end, 1)
     }
-
-    return officer_stats
