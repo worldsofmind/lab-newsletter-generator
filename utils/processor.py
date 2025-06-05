@@ -1,143 +1,97 @@
+
 import pandas as pd
-import re
-from collections import defaultdict
+from datetime import datetime
 
-SURVEY_QUESTIONS = [
-    "My LAB case officers made sufficient efforts to help me understand what was happening in my case",
-    "I got enough help from my LAB case officers when I needed to give them documents and information for my case",
-    "I am satisfied with what LAB has done to move my case along",
-    "The LAB officers handling my case were respectful and understanding",
-    "I knew what I could do if I could not pay LAB’s fees for the work done on my case (contribution)",
-    "I was able to communicate easily with the LAB officers handling my case",
-    "I am overall satisfied with LAB’s services"
-]
+def compute_officer_stats(officer_row, caseload_df, ratings_df, period, all_caseload_df):
+    name = officer_row["name_self"]
+    function = officer_row["function"]
+    relevant_df = caseload_df[caseload_df["Name"] == name]
 
-def normalize(text):
-    return re.sub(r"\s+", "", str(text)).lower()
+    if function not in ["LO", "LE"]:
+        return None
 
-def clean_columns(df):
-    df.columns = df.columns.map(str)
-    df.columns = [re.sub(r"\s+", " ", col).strip() for col in df.columns]
-    return df
+    group_df = caseload_df[caseload_df["Function"] == function]
 
-def find_column(columns, pattern):
-    norm_pattern = normalize(pattern)
-    for col in columns:
-        if norm_pattern in normalize(col):
-            return col
-    return None
+    def safe_mean(series):
+        return round(series.dropna().astype(float).mean(), 1) if not series.dropna().empty else 0
 
-def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_caseload_df):
-    officer_name = officer_row["Name"].strip().lower()
-    stats = defaultdict(lambda: "N/A")
+    def count_nfa(df, reasons, start_date, end_date, case_type):
+        mask = (
+            df["Closure Reason"].astype(str).isin(reasons) &
+            (df["Case Category"] == case_type) &
+            pd.to_datetime(df["Closure Date"], errors='coerce').between(start_date, end_date)
+        )
+        return df[mask].shape[0]
 
-    case_load_df = clean_columns(case_load_df)
-    all_caseload_df = clean_columns(all_caseload_df)
+    def count_nfa_other(df, exclude_reasons, start_date, end_date, case_type):
+        mask = (
+            ~df["Closure Reason"].astype(str).isin(exclude_reasons) &
+            (df["Case Category"] == case_type) &
+            pd.to_datetime(df["Closure Date"], errors='coerce').between(start_date, end_date)
+        )
+        return df[mask].shape[0]
 
-    case_row = case_load_df[case_load_df["Name"].str.strip().str.lower() == officer_name]
-    case_row = case_row.iloc[0] if not case_row.empty else pd.Series(dtype=object)
+    def count_reassigned(df, case_type, start_date, end_date):
+        mask = (
+            (df["Case Category"] == case_type) &
+            (df["Reassigned"] == "Yes") &
+            pd.to_datetime(df["Reassign Date"], errors='coerce').between(start_date, end_date)
+        )
+        return df[mask].shape[0]
 
-    def _get_value(df_row, col):
-        return pd.to_numeric(df_row.get(col, 0), errors="coerce")
+    # Dynamic columns
+    inhouse_open_col = f"In-house Caseload as at {period['date_start']}"
+    assigned_open_col = f"Assigned Caseload as at {period['date_start']}"
+    inhouse_end_col = f"In-house Caseload as at {period['date_end']}"
+    assigned_end_col = f"Assigned Caseload as at {period['date_end']}"
+    new_inhouse_col = "New In-house Cases (May to Aug)"
+    new_assigned_col = "New Assigned Cases (May to Aug)"
 
-    def get_stat(keyword):
-        col = find_column(case_load_df.columns, keyword)
-        return _get_value(case_row, col) if col else 0
+    # Pull individual values
+    def extract(col, default=0):
+        return relevant_df[col].values[0] if col in relevant_df.columns and not relevant_df[col].empty else default
 
-    ds = period["date_start"]
-    de = period["date_end"]
-
-    # In-house
-    stats["inhouse_opening"] = get_stat(f"In-house Caseload as at {ds}")
-    stats["inhouse_end"] = get_stat(f"In-house Caseload as at {de}")
-    stats["inhouse_added"] = get_stat(f"Additional In-house Cases Between {ds} to {de}")
-    nfa1 = get_stat(f"In-house Cases NFA- 07 and NFA-12 Between {ds} to {de}")
-    nfa2 = get_stat(f"In-house Cases NFA- others Between {ds} to {de}")
-    stats["inhouse_nfa"] = nfa1 + nfa2
-    removed = stats["inhouse_nfa"] + 11
-    stats["inhouse_removed"] = removed
-    stats["inhouse_reassigned"] = 11
-
-    # Assigned
-    stats["assigned_opening"] = get_stat(f"Assigned Caseload as at {ds}")
-    stats["assigned_end"] = get_stat(f"Assigned Caseload as at {de}")
-    stats["assigned_added"] = get_stat(f"Additional Assigned Cases Between {ds} to {de}")
-    na1 = get_stat(f"Assigned Cases NFA- 07 Between {ds} to {de}")
-    na2 = get_stat(f"Assigned Cases NFA- others Between {ds} to {de}")
-    stats["assigned_nfa"] = na1 + na2
-    aremoved = stats["assigned_nfa"] + 2
-    stats["assigned_removed"] = aremoved
-    stats["assigned_reassigned"] = 2
-
-    def avg_stat(keyword):
-        col = find_column(all_caseload_df.columns, keyword)
-        if not col:
-            return "N/A"
-        values = pd.to_numeric(all_caseload_df[col], errors="coerce").dropna()
-        return round(values.mean(), 1) if not values.empty else "N/A"
-
-    avg_map = {
-        "avg_inhouse_opening": f"In-house Caseload as at {ds}",
-        "avg_inhouse_end": f"In-house Caseload as at {de}",
-        "avg_assigned_opening": f"Assigned Caseload as at {ds}",
-        "avg_assigned_end": f"Assigned Caseload as at {de}",
-        "avg_inhouse_added": f"Additional In-house Cases Between {ds} to {de}",
-        "avg_assigned_added": f"Additional Assigned Cases Between {ds} to {de}",
-        "avg_inhouse_nfa": f"In-house Cases NFA- 07 and NFA-12 Between {ds} to {de}",
-        "avg_assigned_nfa": f"Assigned Cases NFA- 07 Between {ds} to {de}",
+    officer_stats = {
+        "name": name,
+        "abbreviation": officer_row["name_abbrev"],
+        "function": function,
+        "period": {
+            "date_start": period["date_start"],
+            "date_end": period["date_end"],
+            "date_start_verbose": period["date_start_verbose"],
+            "date_end_verbose": period["date_end_verbose"],
+            "month_start": period["month_start"],
+            "month_end": period["month_end"]
+        },
+        # 🟦 Opening values
+        "inhouse_opening": extract(inhouse_open_col),
+        "assigned_opening": extract(assigned_open_col),
+        # 🟨 In-period
+        "inhouse_added": extract(new_inhouse_col),
+        "assigned_added": extract(new_assigned_col),
+        "inhouse_nfa_712": count_nfa(all_caseload_df, ["7", "12"], period["date_start_dt"], period["date_end_dt"], "In-house"),
+        "inhouse_nfa_others": count_nfa_other(all_caseload_df, ["7", "12"], period["date_start_dt"], period["date_end_dt"], "In-house"),
+        "inhouse_reassigned": count_reassigned(all_caseload_df, "In-house", period["date_start_dt"], period["date_end_dt"]),
+        "assigned_nfa_712": count_nfa(all_caseload_df, ["7", "12"], period["date_start_dt"], period["date_end_dt"], "Assigned"),
+        "assigned_nfa_others": count_nfa_other(all_caseload_df, ["7", "12"], period["date_start_dt"], period["date_end_dt"], "Assigned"),
+        "assigned_reassigned": count_reassigned(all_caseload_df, "Assigned", period["date_start_dt"], period["date_end_dt"]),
+        # 🟩 Ending values
+        "inhouse_end": extract(inhouse_end_col),
+        "assigned_end": extract(assigned_end_col),
+        # Averages by function group
+        "avg_inhouse_opening": safe_mean(group_df[inhouse_open_col]) if inhouse_open_col in group_df else 0,
+        "avg_assigned_opening": safe_mean(group_df[assigned_open_col]) if assigned_open_col in group_df else 0,
+        "avg_inhouse_added": safe_mean(group_df[new_inhouse_col]) if new_inhouse_col in group_df else 0,
+        "avg_assigned_added": safe_mean(group_df[new_assigned_col]) if new_assigned_col in group_df else 0,
+        "avg_inhouse_end": safe_mean(group_df[inhouse_end_col]) if inhouse_end_col in group_df else 0,
+        "avg_assigned_end": safe_mean(group_df[assigned_end_col]) if assigned_end_col in group_df else 0,
+        # Placeholder for other averages
+        "avg_inhouse_nfa_712": 0,
+        "avg_inhouse_nfa_others": 0,
+        "avg_inhouse_reassigned": 0,
+        "avg_assigned_nfa_712": 0,
+        "avg_assigned_nfa_others": 0,
+        "avg_assigned_reassigned": 0
     }
 
-    for key, target in avg_map.items():
-        stats[key] = avg_stat(target)
-
-    ratings_df.columns = ratings_df.columns.str.strip().str.lower()
-    ratings_df["name"] = ratings_df["name"].astype(str).str.strip().str.lower()
-    ratings_df["assigned out indicator"] = ratings_df["assigned out indicator"].astype(str).str.lower().str.strip()
-    matched_ratings = ratings_df[ratings_df["name"] == officer_name]
-
-    q_cols = [q.lower() for q in SURVEY_QUESTIONS]
-    survey_cols = [col for col in ratings_df.columns if col in q_cols]
-    display_q_map = {q.lower(): q for q in SURVEY_QUESTIONS}
-
-    if not matched_ratings.empty and survey_cols:
-        survey = matched_ratings[survey_cols]
-        stats["survey_ratings"] = {
-            display_q_map[col]: round(survey[col].mean(), 1)
-            for col in survey.columns if pd.api.types.is_numeric_dtype(survey[col])
-        }
-    else:
-        stats["survey_ratings"] = {}
-
-    def case_ratings(assigned_statuses):
-        filtered = matched_ratings[
-            matched_ratings["assigned out indicator"].isin(assigned_statuses)
-        ]
-        if filtered.empty:
-            return []
-        score_cols = [col for col in filtered.columns if col in q_cols]
-        filtered = filtered.copy()
-        filtered["score"] = filtered[score_cols].mean(axis=1)
-        return [
-            {
-                "case_ref": row.get("case ref no", "NA"),
-                "applicant": row.get("applicant", "NA"),
-                "score": round(row["score"], 1)
-            }
-            for _, row in filtered.iterrows()
-            if pd.notnull(row.get("case ref no")) and pd.notnull(row.get("applicant"))
-        ]
-
-    stats["inhouse_case_ratings"] = case_ratings(["no", "n"])
-    stats["assigned_case_ratings"] = case_ratings(["yes", "y"])
-
-    stats["name"] = officer_row["Name"]
-    stats["abbreviation"] = officer_row.get("Abbreviation", "")
-    stats["function"] = officer_row.get("self_type", "")
-    stats["period"] = period
-    return stats
-
-def process_all_officers(namelist_df, case_load_df, ratings_df, period):
-    return [
-        compute_officer_stats(row, case_load_df, ratings_df, period, case_load_df)
-        for _, row in namelist_df.iterrows()
-    ]
+    return officer_stats
