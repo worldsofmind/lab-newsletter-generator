@@ -2,17 +2,19 @@
 import pandas as pd
 import re
 from utils.encoding import detect_encoding
+from datetime import datetime
 
 def extract_dates_from_columns(columns):
     date_pattern = r"(\d{2}/\d{2}/\d{4})"
-    found = re.findall(date_pattern, " ".join(columns))
-    if len(found) >= 2:
+    matches = re.findall(date_pattern, " ".join(columns))
+    if len(matches) >= 2:
         try:
-            date_start = datetime.strptime(found[0], "%d/%m/%Y")
-            date_end = datetime.strptime(found[1], "%d/%m/%Y")
+            unique_dates = sorted(set(datetime.strptime(d, "%d/%m/%Y") for d in matches))
+            date_start = unique_dates[0]
+            date_end = unique_dates[-1]
             return {
-                "date_start": found[0],
-                "date_end": found[1],
+                "date_start": date_start.strftime("%d/%m/%Y"),
+                "date_end": date_end.strftime("%d/%m/%Y"),
                 "date_start_verbose": date_start.strftime("%d %B %Y").upper(),
                 "date_end_verbose": date_end.strftime("%d %B %Y").upper(),
                 "month_start": date_start.strftime("%b").upper(),
@@ -20,7 +22,7 @@ def extract_dates_from_columns(columns):
             }
         except Exception:
             pass
-    raise ValueError("Could not extract two dates from column headers.")
+    raise ValueError("Could not extract at least two valid dates from column headers.")
 
 def detect_header_and_load_csv(file):
     encoding = detect_encoding(file)
