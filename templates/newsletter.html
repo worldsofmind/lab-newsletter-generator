@@ -56,7 +56,7 @@
       <div class="stat-box yellow">
         <div class="number">-{{ officer.inhouse_reassigned }}</div>
         <div class="label">reassigned in-house cases</div>
-        <div class="avg">LO Avg: N/A</div>
+        <div class="avg">LO Avg: {{ officer.avg_inhouse_reassigned }}</div>
       </div>
       <div class="stat-box yellow">
         <div class="number">+{{ officer.assigned_added }}</div>
@@ -71,7 +71,7 @@
       <div class="stat-box yellow">
         <div class="number">-{{ officer.assigned_reassigned }}</div>
         <div class="label">reassigned assigned cases</div>
-        <div class="avg">LO Avg: N/A</div>
+        <div class="avg">LO Avg: {{ officer.avg_assigned_reassigned }}</div>
       </div>
 
       <div class="header">ON {{ officer.period.date_end_verbose }}, YOU HAVE</div>
