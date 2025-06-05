@@ -1,89 +1,64 @@
-
 import pandas as pd
-import re
+
+def _get_value(row, column, default=0):
+    try:
+        val = row[column]
+        return int(val) if pd.notnull(val) else default
+    except KeyError:
+        return default
 
 def compute_officer_stats(row, caseload_df, ratings_df, period, all_caseload_df):
-    # Clean up column headers before use
-    caseload_df.columns = caseload_df.columns.map(lambda x: re.sub(r"\s+", " ", str(x)).strip())
-    all_caseload_df.columns = all_caseload_df.columns.map(lambda x: re.sub(r"\s+", " ", str(x)).strip())
-    ratings_df.columns = ratings_df.columns.map(lambda x: re.sub(r"\s+", " ", str(x)).strip())
-
     name = row["Name"]
     abbreviation = row["Abbreviation"]
     function = row["self_type"]
 
-    officer_data = caseload_df[caseload_df["Name"].str.strip() == name]
-
     stats = {
+        "inhouse_opening": _get_value(row, "In-house Caseload as at 08/05/2024"),
+        "inhouse_added": _get_value(row, "Additional In-house Cases Between 08/05/2024 to 02/08/2024"),
+        "inhouse_nfa": _get_value(row, "In-house Cases NFA- 07 and NFA-12 Between 08/05/2024 to 02/08/2024")
+                       + _get_value(row, "In-house Cases NFA- others Between 08/05/2024 to 02/08/2024"),
+        "inhouse_end": _get_value(row, "In-house Caseload as at 02/08/2024"),
+        "assigned_opening": _get_value(row, "Assigned Caseload as at 08/05/202 4"),
+        "assigned_added": _get_value(row, "Additional Assigned Cases Between 08/05/2024 to 02/08/2024"),
+        "assigned_nfa": _get_value(row, "Assigned Cases NFA- 07 Between 08/05/2024 to 02/08/2024")
+                        + _get_value(row, "Assigned Cases NFA- others Between 08/05/2024 to 02/08/2024"),
+        "assigned_end": _get_value(row, "Assigned Caseload as at 02/08/2024")
+    }
+
+    # Derived reassigned counts
+    stats["inhouse_reassigned"] = (
+        stats["inhouse_opening"] + stats["inhouse_added"] -
+        stats["inhouse_nfa"] - stats["inhouse_end"]
+    )
+    stats["assigned_reassigned"] = (
+        stats["assigned_opening"] + stats["assigned_added"] -
+        stats["assigned_nfa"] - stats["assigned_end"]
+    )
+
+    # Averages
+    def avg(col_name):
+        try:
+            vals = pd.to_numeric(all_caseload_df[col_name], errors="coerce").dropna()
+            return round(vals.mean(), 1) if not vals.empty else "N/A"
+        except KeyError:
+            return "N/A"
+
+    return {
         "name": name,
         "abbreviation": abbreviation,
         "function": function,
         "period": period,
-        "inhouse_opening": _get_value(officer_data, "In-house Caseload as at 08/05/2024"),
-        "inhouse_added": _get_value(officer_data, "Additional In-house Cases Between 08/05/2024 to 02/08/2024"),
-        "inhouse_nfa": (
-            _get_value(officer_data, "In-house Cases NFA- 07 and NFA-12 Between 08/05/2024 to 02/08/2024")
-            + _get_value(officer_data, "In-house Cases NFA- others Between 08/05/2024 to 02/08/2024")
-        ),
-        "inhouse_closed": "N/A",
-        "inhouse_end": _get_value(officer_data, "In-house Caseload as at 02/08/2024"),
-
-        "assigned_opening": _get_value(officer_data, "Assigned Caseload as at 08/05/202 4"),
-        "assigned_added": _get_value(officer_data, "Additional Assigned Cases Between 08/05/2024 to 02/08/2024"),
-        "assigned_nfa": (
-            _get_value(officer_data, "Assigned Cases NFA- 07 Between 08/05/2024 to 02/08/2024")
-            + _get_value(officer_data, "Assigned Cases NFA- others Between 08/05/2024 to 02/08/2024")
-        ),
-        "assigned_closed": "N/A",
-        "assigned_end": _get_value(officer_data, "Assigned Caseload as at 02/08/2024"),
+        **stats,
+        "avg_inhouse_opening": avg("In-house Caseload as at 08/05/2024"),
+        "avg_inhouse_added": avg("Additional In-house Cases Between 08/05/2024 to 02/08/2024"),
+        "avg_inhouse_nfa": avg("In-house Cases NFA- 07 and NFA-12 Between 08/05/2024 to 02/08/2024")
+                           + avg("In-house Cases NFA- others Between 08/05/2024 to 02/08/2024"),
+        "avg_inhouse_end": avg("In-house Caseload as at 02/08/2024"),
+        "avg_inhouse_reassigned": "N/A",  # complex to average across derived field
+        "avg_assigned_opening": avg("Assigned Caseload as at 08/05/202 4"),
+        "avg_assigned_added": avg("Additional Assigned Cases Between 08/05/2024 to 02/08/2024"),
+        "avg_assigned_nfa": avg("Assigned Cases NFA- 07 Between 08/05/2024 to 02/08/2024")
+                            + avg("Assigned Cases NFA- others Between 08/05/2024 to 02/08/2024"),
+        "avg_assigned_end": avg("Assigned Caseload as at 02/08/2024"),
+        "avg_assigned_reassigned": "N/A"  # same as above
     }
-
-    stats.update({
-        "avg_inhouse_opening": round(all_caseload_df["In-house Caseload as at 08/05/2024"].mean(), 1),
-        "avg_inhouse_added": round(all_caseload_df["Additional In-house Cases Between 08/05/2024 to 02/08/2024"].mean(), 1),
-        "avg_inhouse_closed": "N/A",
-        "avg_inhouse_end": round(all_caseload_df["In-house Caseload as at 02/08/2024"].mean(), 1),
-        "avg_assigned_opening": round(all_caseload_df["Assigned Caseload as at 08/05/202 4"].mean(), 1),
-        "avg_assigned_added": round(all_caseload_df["Additional Assigned Cases Between 08/05/2024 to 02/08/2024"].mean(), 1),
-        "avg_assigned_closed": "N/A",
-        "avg_assigned_end": round(all_caseload_df["Assigned Caseload as at 02/08/2024"].mean(), 1),
-    })
-
-    # Survey Ratings
-    questions = [col for col in ratings_df.columns if "LAB" in col and "Indicator" not in col]
-    survey = ratings_df[ratings_df["Abbreviation"] == abbreviation]
-    if not survey.empty:
-        survey_scores = {
-            q: round(survey[q].dropna().astype(float).mean(), 1)
-            for q in questions
-        }
-    else:
-        survey_scores = {}
-
-    stats["survey_ratings"] = survey_scores
-
-    # Case Ratings
-    def extract_case_ratings(df, assigned):
-        filtered = df[(df["Abbreviation"] == abbreviation) & (df["ASSIGNED OUT INDICATOR"] == assigned)]
-        ratings = []
-        for _, r in filtered.iterrows():
-            scores = [r[q] for q in questions if pd.notna(r[q])]
-            if scores:
-                ratings.append({
-                    "case_ref": r["CASE REF NO"],
-                    "applicant": r["APPLICANT"],
-                    "score": round(pd.Series(scores).astype(float).mean(), 1)
-                })
-        return ratings
-
-    stats["inhouse_case_ratings"] = extract_case_ratings(ratings_df, "N")
-    stats["assigned_case_ratings"] = extract_case_ratings(ratings_df, "Y")
-
-    return stats
-
-def _get_value(df, col, default=0):
-    try:
-        val = df[col].values[0]
-        return int(val) if not pd.isna(val) else default
-    except Exception:
-        return default
