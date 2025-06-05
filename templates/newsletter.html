@@ -1,70 +1,109 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>LAB Officer Newsletter</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            color: #333;
-        }
-        .header {
-            text-align: center;
-        }
-        .header h1 {
-            margin-bottom: 0;
-        }
-        .header h2 {
-            margin-top: 5px;
-            color: #666;
-        }
-        .section {
-            margin-top: 30px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 8px;
-            text-align: center;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-    </style>
+  <meta charset="utf-8">
+  <title>Newsletter</title>
+  <style>
+    .main-container {max-width:100%;}
+    *{font-size:48px;}
+    .minwidth {min-width: 65em;}
+    .font_topname {font-family: "Cambria";}
+    .font_quarteryear {font-family: "Corbel";}
+    .font_1 {font-family: "Bahnschrift";}
+    .font_2 {font-family: "Bahnschrift"}
+    .font_3 {font-family: "Corbel"}
+    .number_cell {vertical-align:top; border-bottom-style:hidden; padding-bottom:0em; border-radius: 3em 3em 0em 0em;}
+    .top_cell {border-radius: 2em; padding: 0.7em; font-size:0.9em; font-weight:normal}
+    .avg_cell {border-radius: 0em 0em 3em 3em;font-family: "Bahnschrift Light";}
+    .big_num {font-size:5em; font-weight:bold}
+    .med_num {font-size:4em; font-weight:bold}
+    .table_cell {background-color: #F4E7E3; font-weight:bold; height:3em; vertical-align:middle}
+    .blank_space {padding:1em}
+    #top_header {background-color: #2db8c1}
+    #bottom_header {background-color: #2db8c1; height:4em; width: 100%}
+    #report_card_label {letter-spacing:0.15em }
+    #staff_name {letter-spacing:0.2em; padding:0.3em}
+    table {width:100%; border-collapse: collapse;}
+    td, th {padding: 0.4em; border: 1px solid #ddd; text-align: left;}
+  </style>
 </head>
-<body>
-    <div class="header">
-        <h1>Personal Statistics Newsletter</h1>
-        <h2>{{ period.date_start }} – {{ period.date_end }}</h2>
-        <h3>{{ name }} ({{ abbreviation }})</h3>
-    </div>
+<body class="main-container">
 
-    <div class="section">
-        <h3>Case Statistics</h3>
-        <table>
-            <tr>
-                <th>Type</th>
-                <th>Case Count</th>
-            </tr>
-            <tr>
-                <td>In-house</td>
-                <td>{{ inhouse_count }}</td>
-            </tr>
-            <tr>
-                <td>Assigned</td>
-                <td>{{ assigned_count }}</td>
-            </tr>
-        </table>
-    </div>
+  <div id="top_header">
+    <h1 class="font_topname" id="staff_name">{{ name }} ({{ abbreviation }})</h1>
+    <h2 class="font_quarteryear">Newsletter: {{ period.date_start }} to {{ period.date_end }}</h2>
+  </div>
 
-    <div class="section">
-        <h3>Average Rating</h3>
-        <p>“I am overall satisfied with LAB’s services”: <strong>{{ avg_rating }}</strong></p>
-    </div>
+  <div class="blank_space"></div>
+
+  <h2 class="font_1">Case Statistics</h2>
+  <table>
+    <tr class="table_cell">
+      <th></th><th>Opening</th><th>Additional</th><th>NFA (07/12)</th><th>NFA (Others)</th><th>Ending</th>
+    </tr>
+    <tr>
+      <td>In-house</td>
+      <td>{{ inhouse_opening }}</td>
+      <td>{{ inhouse_additional }}</td>
+      <td>{{ inhouse_nfa_07_12 }}</td>
+      <td>{{ inhouse_nfa_others }}</td>
+      <td>{{ inhouse_ending }}</td>
+    </tr>
+    <tr>
+      <td>Assigned</td>
+      <td>{{ assigned_opening }}</td>
+      <td>{{ assigned_additional }}</td>
+      <td>{{ assigned_nfa_07_12 }}</td>
+      <td>{{ assigned_nfa_others }}</td>
+      <td>{{ assigned_ending }}</td>
+    </tr>
+    <tr class="avg_cell">
+      <td>Average</td>
+      <td>{{ avg_inhouse_opening }}/{{ avg_assigned_opening }}</td>
+      <td>{{ avg_inhouse_additional }}/{{ avg_assigned_additional }}</td>
+      <td>{{ avg_inhouse_nfa_07_12 }}/{{ avg_assigned_nfa_07_12 }}</td>
+      <td>{{ avg_inhouse_nfa_others }}/{{ avg_assigned_nfa_others }}</td>
+      <td>{{ avg_inhouse_ending }}/{{ avg_assigned_ending }}</td>
+    </tr>
+  </table>
+
+  <div class="blank_space"></div>
+
+  <h2 class="font_1">Survey Result</h2>
+  <p>“I am overall satisfied with LAB’s services”: <strong>{{ avg_overall_satisfaction }}</strong></p>
+
+  <div class="blank_space"></div>
+
+  <h2 class="font_1">Case Ratings (In-house Cases)</h2>
+  <table>
+    <tr class="table_cell">
+      <th>Case Ref</th><th>Applicant</th><th>Average Score</th>
+    </tr>
+    {% for r in ratings_inhouse %}
+    <tr>
+      <td>{{ r.case_ref }}</td>
+      <td>{{ r.applicant }}</td>
+      <td>{{ r.avg_score }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <div class="blank_space"></div>
+
+  <h2 class="font_1">Case Ratings (Assigned Cases)</h2>
+  <table>
+    <tr class="table_cell">
+      <th>Case Ref</th><th>Applicant</th><th>Average Score</th>
+    </tr>
+    {% for r in ratings_assigned %}
+    <tr>
+      <td>{{ r.case_ref }}</td>
+      <td>{{ r.applicant }}</td>
+      <td>{{ r.avg_score }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <div id="bottom_header"></div>
 </body>
 </html>
