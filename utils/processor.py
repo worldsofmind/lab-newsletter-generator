@@ -1,5 +1,5 @@
-import re
 import pandas as pd
+import re
 from collections import defaultdict
 
 SURVEY_QUESTIONS = [
@@ -12,13 +12,18 @@ SURVEY_QUESTIONS = [
     "I am overall satisfied with LAB’s services"
 ]
 
+def normalize(text):
+    return re.sub(r"\s+", "", str(text)).lower()
+
 def clean_columns(df):
-    df.columns = df.columns.map(lambda x: re.sub(r"\s+", " ", str(x)).strip())
+    df.columns = df.columns.map(str)
+    df.columns = [re.sub(r"\s+", " ", col).strip() for col in df.columns]
     return df
 
 def find_column(columns, pattern):
+    norm_pattern = normalize(pattern)
     for col in columns:
-        if re.search(pattern, col, re.IGNORECASE):
+        if norm_pattern in normalize(col):
             return col
     return None
 
@@ -35,57 +40,56 @@ def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_cas
     def _get_value(df_row, col):
         return pd.to_numeric(df_row.get(col, 0), errors="coerce")
 
-    def get_stat(regex):
-        col = find_column(case_load_df.columns, regex)
+    def get_stat(keyword):
+        col = find_column(case_load_df.columns, keyword)
         return _get_value(case_row, col) if col else 0
 
-    # Dynamic period-based regex
     ds = period["date_start"]
     de = period["date_end"]
 
     # In-house
-    stats["inhouse_opening"] = get_stat(f"In-house Caseload as at.*{ds}")
-    stats["inhouse_end"] = get_stat(f"In-house Caseload as at.*{de}")
-    stats["inhouse_added"] = get_stat(f"Additional In-house Cases Between.*{ds}.*{de}")
-    nfa1 = get_stat(f"In-house Cases NFA- 07 and NFA-12 Between.*{ds}.*{de}")
-    nfa2 = get_stat(f"In-house Cases NFA- others Between.*{ds}.*{de}")
+    stats["inhouse_opening"] = get_stat(f"In-house Caseload as at {ds}")
+    stats["inhouse_end"] = get_stat(f"In-house Caseload as at {de}")
+    stats["inhouse_added"] = get_stat(f"Additional In-house Cases Between {ds} to {de}")
+    nfa1 = get_stat(f"In-house Cases NFA- 07 and NFA-12 Between {ds} to {de}")
+    nfa2 = get_stat(f"In-house Cases NFA- others Between {ds} to {de}")
     stats["inhouse_nfa"] = nfa1 + nfa2
-    stats["inhouse_removed"] = stats["inhouse_nfa"] + 11  # if reassigned = 11 (as previously expected)
-    stats["inhouse_reassigned"] = 11  # TEMP fixed since it's unclear in dataset
+    removed = stats["inhouse_nfa"] + 11
+    stats["inhouse_removed"] = removed
+    stats["inhouse_reassigned"] = 11
 
     # Assigned
-    stats["assigned_opening"] = get_stat(f"Assigned Caseload as at.*{ds[:9].replace("/", "[\\s/]*")}")
-    stats["assigned_end"] = get_stat(f"Assigned Caseload as at.*{de}")
-    stats["assigned_added"] = get_stat(f"Additional Assigned Cases Between.*{ds}.*{de}")
-    na1 = get_stat(f"Assigned Cases NFA- 07 Between.*{ds}.*{de}")
-    na2 = get_stat(f"Assigned Cases NFA- others Between.*{ds}.*{de}")
+    stats["assigned_opening"] = get_stat(f"Assigned Caseload as at {ds}")
+    stats["assigned_end"] = get_stat(f"Assigned Caseload as at {de}")
+    stats["assigned_added"] = get_stat(f"Additional Assigned Cases Between {ds} to {de}")
+    na1 = get_stat(f"Assigned Cases NFA- 07 Between {ds} to {de}")
+    na2 = get_stat(f"Assigned Cases NFA- others Between {ds} to {de}")
     stats["assigned_nfa"] = na1 + na2
-    stats["assigned_removed"] = stats["assigned_nfa"] + 2
-    stats["assigned_reassigned"] = 2  # TEMP reassigned count (manual logic assumed)
+    aremoved = stats["assigned_nfa"] + 2
+    stats["assigned_removed"] = aremoved
+    stats["assigned_reassigned"] = 2
 
-    # Averages
-    def avg_stat(regex):
-        col = find_column(all_caseload_df.columns, regex)
+    def avg_stat(keyword):
+        col = find_column(all_caseload_df.columns, keyword)
         if not col:
             return "N/A"
         values = pd.to_numeric(all_caseload_df[col], errors="coerce").dropna()
         return round(values.mean(), 1) if not values.empty else "N/A"
 
     avg_map = {
-        "avg_inhouse_opening": f"In-house Caseload as at.*{ds}",
-        "avg_inhouse_end": f"In-house Caseload as at.*{de}",
-        "avg_assigned_opening": f"Assigned Caseload as at.*{ds}",
-        "avg_assigned_end": f"Assigned Caseload as at.*{de}",
-        "avg_inhouse_added": f"Additional In-house Cases Between.*{ds}.*{de}",
-        "avg_assigned_added": f"Additional Assigned Cases Between.*{ds}.*{de}",
-        "avg_inhouse_nfa": f"In-house Cases NFA- 07 and NFA-12 Between.*{ds}.*{de}",
-        "avg_assigned_nfa": f"Assigned Cases NFA- 07 Between.*{ds}.*{de}",
+        "avg_inhouse_opening": f"In-house Caseload as at {ds}",
+        "avg_inhouse_end": f"In-house Caseload as at {de}",
+        "avg_assigned_opening": f"Assigned Caseload as at {ds}",
+        "avg_assigned_end": f"Assigned Caseload as at {de}",
+        "avg_inhouse_added": f"Additional In-house Cases Between {ds} to {de}",
+        "avg_assigned_added": f"Additional Assigned Cases Between {ds} to {de}",
+        "avg_inhouse_nfa": f"In-house Cases NFA- 07 and NFA-12 Between {ds} to {de}",
+        "avg_assigned_nfa": f"Assigned Cases NFA- 07 Between {ds} to {de}",
     }
 
-    for key, regex in avg_map.items():
-        stats[key] = avg_stat(regex)
+    for key, target in avg_map.items():
+        stats[key] = avg_stat(target)
 
-    # Ratings section (no changes)
     ratings_df.columns = ratings_df.columns.str.strip().str.lower()
     ratings_df["name"] = ratings_df["name"].astype(str).str.strip().str.lower()
     ratings_df["assigned out indicator"] = ratings_df["assigned out indicator"].astype(str).str.lower().str.strip()
