@@ -1,80 +1,134 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>LAB Officer Newsletter</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        h1 { font-size: 24px; }
-        h2 { font-size: 20px; margin-top: 40px; }
-        h3 { font-size: 18px; margin-top: 30px; }
-        h4 { font-size: 16px; margin-top: 20px; }
-        table, th, td { border: 1px solid black; border-collapse: collapse; padding: 5px; }
-        th { background-color: #f2f2f2; }
-    </style>
+  <meta charset="UTF-8" />
+  <title>{{ officer.name }}'s Newsletter</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    h2 { margin-top: 40px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f5f5f5; }
+    .section { margin-bottom: 40px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+    .stat-box { padding: 16px; border-radius: 8px; text-align: center; color: #333; }
+    .blue { background-color: #e3f2fd; }
+    .yellow { background-color: #fff9c4; }
+    .green { background-color: #d0f0c0; }
+    .header { font-weight: bold; font-size: 18px; margin-bottom: 10px; grid-column: span 2; }
+    .number { font-size: 24px; font-weight: bold; }
+    .label { font-size: 14px; margin-top: 5px; }
+    .avg { font-size: 12px; color: #555; margin-top: 5px; }
+  </style>
 </head>
 <body>
-    <h1>{{ officer.name }} ({{ officer.abbreviation }})</h1>
-    <p><strong>Function:</strong> {{ officer.function }}</p>
-    <p><strong>Period:</strong> {{ officer.period.date_start }} to {{ officer.period.date_end }}</p>
 
+  <h1>{{ officer.name }} ({{ officer.abbreviation }})</h1>
+  <p><strong>Function:</strong> {{ officer.function }}</p>
+  <p><strong>Period:</strong> {{ officer.period.date_start }} to {{ officer.period.date_end }}</p>
+
+  <div class="section">
     <h2>Case Statistics</h2>
-    <h3>In-House Cases</h3>
-    <ul>
-        <li>Opening caseload: {{ officer.inhouse_opening }}</li>
-        <li>Additional cases: {{ officer.inhouse_added }}</li>
-        <li>NFA: {{ officer.inhouse_nfa }}</li>
-        <li>Closing caseload: {{ officer.inhouse_end }}</li>
-        <li>Average opening: {{ officer.avg_inhouse_opening }}</li>
-        <li>Average added: {{ officer.avg_inhouse_added }}</li>
-        <li>Average closing: {{ officer.avg_inhouse_end }}</li>
-    </ul>
+    <div class="grid">
+      <div class="header">ON {{ officer.period.date_start_verbose }}, YOU HAD</div>
+      <div class="stat-box blue">
+        <div class="number">{{ officer.inhouse_opening }}</div>
+        <div class="label">in-house cases</div>
+        <div class="avg">LO Avg: {{ officer.avg_inhouse_opening }}</div>
+      </div>
+      <div class="stat-box blue">
+        <div class="number">{{ officer.assigned_opening }}</div>
+        <div class="label">assigned cases</div>
+        <div class="avg">LO Avg: {{ officer.avg_assigned_opening }}</div>
+      </div>
 
-    <h3>Assigned Cases</h3>
-    <ul>
-        <li>Opening caseload: {{ officer.assigned_opening }}</li>
-        <li>Additional cases: {{ officer.assigned_added }}</li>
-        <li>NFA: {{ officer.assigned_nfa }}</li>
-        <li>Closing caseload: {{ officer.assigned_end }}</li>
-        <li>Average opening: {{ officer.avg_assigned_opening }}</li>
-        <li>Average added: {{ officer.avg_assigned_added }}</li>
-        <li>Average closing: {{ officer.avg_assigned_end }}</li>
-    </ul>
+      <div class="header">BETWEEN {{ officer.period.month_start }} TO {{ officer.period.month_end }}, YOU HAVE</div>
+      <div class="stat-box yellow">
+        <div class="number">+{{ officer.inhouse_added }}</div>
+        <div class="label">new in-house cases</div>
+        <div class="avg">LO Avg: +{{ officer.avg_inhouse_added }}</div>
+      </div>
+      <div class="stat-box yellow">
+        <div class="number">-{{ officer.inhouse_nfa }}</div>
+        <div class="label">completed (nfa) in-house cases</div>
+        <div class="avg">LO Avg: -{{ officer.avg_inhouse_nfa }}</div>
+      </div>
+      <div class="stat-box yellow">
+        <div class="number">-{{ officer.inhouse_reassigned }}</div>
+        <div class="label">reassigned in-house cases</div>
+        <div class="avg">LO Avg: N/A</div>
+      </div>
+      <div class="stat-box yellow">
+        <div class="number">+{{ officer.assigned_added }}</div>
+        <div class="label">new assigned cases</div>
+        <div class="avg">LO Avg: +{{ officer.avg_assigned_added }}</div>
+      </div>
+      <div class="stat-box yellow">
+        <div class="number">-{{ officer.assigned_nfa }}</div>
+        <div class="label">completed (nfa) assigned cases</div>
+        <div class="avg">LO Avg: -{{ officer.avg_assigned_nfa }}</div>
+      </div>
+      <div class="stat-box yellow">
+        <div class="number">-{{ officer.assigned_reassigned }}</div>
+        <div class="label">reassigned assigned cases</div>
+        <div class="avg">LO Avg: N/A</div>
+      </div>
 
+      <div class="header">ON {{ officer.period.date_end_verbose }}, YOU HAVE</div>
+      <div class="stat-box green">
+        <div class="number">={{ officer.inhouse_end }}</div>
+        <div class="label">in-house cases</div>
+        <div class="avg">LO Avg: {{ officer.avg_inhouse_end }}</div>
+      </div>
+      <div class="stat-box green">
+        <div class="number">={{ officer.assigned_end }}</div>
+        <div class="label">assigned cases</div>
+        <div class="avg">LO Avg: {{ officer.avg_assigned_end }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
     <h2>Survey Results (Average Rating)</h2>
     {% if officer.survey_ratings %}
-        <ul>
-        {% for q, score in officer.survey_ratings.items() %}
-            <li>{{ q }}: {{ score }}</li>
-        {% endfor %}
-        </ul>
+    <table>
+      <tr><th>Question</th><th>Average Rating</th></tr>
+      {% for q, score in officer.survey_ratings.items() %}
+      <tr><td>{{ q }}</td><td>{{ score }}</td></tr>
+      {% endfor %}
+    </table>
     {% else %}
-        <p>You do not have any survey ratings this quarter.</p>
+    <p>You do not have any survey ratings this quarter.</p>
     {% endif %}
+  </div>
 
+  <div class="section">
     <h2>Case Ratings (In-House Cases)</h2>
     {% if officer.inhouse_case_ratings %}
-        <table>
-            <tr><th>Case Ref</th><th>Applicant</th><th>Average Score</th></tr>
-            {% for case in officer.inhouse_case_ratings %}
-                <tr><td>{{ case.case_ref }}</td><td>{{ case.applicant }}</td><td>{{ case.score }}</td></tr>
-            {% endfor %}
-        </table>
+    <table>
+      <tr><th>Case Ref</th><th>Applicant</th><th>Average Score</th></tr>
+      {% for case in officer.inhouse_case_ratings %}
+      <tr><td>{{ case.case_ref }}</td><td>{{ case.applicant }}</td><td>{{ case.score }}</td></tr>
+      {% endfor %}
+    </table>
     {% else %}
-        <p>You do not have any in-house case ratings this quarter.</p>
+    <p>You do not have any in-house case ratings this quarter.</p>
     {% endif %}
+  </div>
 
+  <div class="section">
     <h2>Case Ratings (Assigned Cases)</h2>
     {% if officer.assigned_case_ratings %}
-        <table>
-            <tr><th>Case Ref</th><th>Applicant</th><th>Average Score</th></tr>
-            {% for case in officer.assigned_case_ratings %}
-                <tr><td>{{ case.case_ref }}</td><td>{{ case.applicant }}</td><td>{{ case.score }}</td></tr>
-            {% endfor %}
-        </table>
+    <table>
+      <tr><th>Case Ref</th><th>Applicant</th><th>Average Score</th></tr>
+      {% for case in officer.assigned_case_ratings %}
+      <tr><td>{{ case.case_ref }}</td><td>{{ case.applicant }}</td><td>{{ case.score }}</td></tr>
+      {% endfor %}
+    </table>
     {% else %}
-        <p>You do not have any assigned case ratings this quarter.</p>
+    <p>You do not have any assigned case ratings this quarter.</p>
     {% endif %}
+  </div>
+
 </body>
 </html>
