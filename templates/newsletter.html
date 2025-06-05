@@ -11,36 +11,54 @@
     th { background-color: #f5f5f5; }
     .section { margin-bottom: 40px; }
 
-    /* NEW CSS for the main grid structure */
-    .case-statistics-grid {
+    /* Case Statistics Grid Layout */
+    .case-statistics-wrapper {
       display: grid;
-      grid-template-columns: 2fr 8fr 2fr; /* Represents the 2-8-2 ratio */
-      gap: 20px; /* Space between main columns */
-      align-items: start; /* Align items to the top of their grid area */
+      grid-template-columns: 20% 60% 20%;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .header-row {
+      display: grid;
+      grid-template-columns: 20% 60% 20%;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .header-box {
+      font-weight: bold;
+      font-size: 16px;
+      padding: 10px;
+      background-color: #f0f0f0;
     }
 
     .stat-column {
-      display: grid; /* Make each column itself a grid */
-      gap: 15px; /* Space between stat boxes within a column */
+      display: grid;
+      gap: 10px;
     }
 
-    /* Adjusting grid for the middle column's stat boxes to make them more compact */
     .stat-column.middle-column {
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Arrange 8 boxes into multiple columns within the 8fr space */
+      grid-template-columns: repeat(4, 1fr);
     }
 
-    /* Original stat-box styles */
-    .stat-box { padding: 16px; border-radius: 8px; text-align: center; color: #333; }
+    .stat-box {
+      border-radius: 8px;
+      text-align: center;
+      padding: 10px;
+      color: #333;
+      min-width: 120px;
+      max-width: 180px;
+      overflow-wrap: break-word;
+    }
+
     .blue { background-color: #e3f2fd; }
+    .yellow { background-color: #fff9c4; }
     .green { background-color: #d0f0c0; }
-    .yellow { background-color: #fff9c4; } /* Adjusted color for consistency */
 
-    .header-box { /* No longer spans full width; will naturally fit its parent stat-column */
-        text-align: center; padding: 12px; font-weight: bold; font-size: 16px;
-    }
-    .number { font-size: 24px; font-weight: bold; }
-    .label { font-size: 14px; margin-top: 5px; }
-    .avg { font-size: 12px; color: #555; margin-top: 5px; }
+    .number { font-size: 20px; font-weight: bold; }
+    .label { font-size: 14px; margin-top: 4px; }
+    .avg { font-size: 12px; color: #555; margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -51,72 +69,80 @@
 
   <div class="section">
     <h2>Case Statistics</h2>
-    <div class="case-statistics-grid"> <div class="stat-column blue-column"> <div class="stat-box blue header-box">ON {{ officer.period.date_start_verbose }}, YOU HAD</div>
+
+    <div class="header-row">
+      <div class="header-box">ON {{ officer.period.date_start_verbose }}</div>
+      <div class="header-box">BETWEEN {{ officer.period.month_start }} TO {{ officer.period.month_end }}</div>
+      <div class="header-box">ON {{ officer.period.date_end_verbose }}</div>
+    </div>
+
+    <div class="case-statistics-wrapper">
+      <div class="stat-column blue-column">
         <div class="stat-box blue">
           <div class="number">{{ officer.inhouse_opening }}</div>
           <div class="label">in-house cases</div>
-          <div class="avg">LO Average: {{ officer.avg_inhouse_opening }}</div>
+          <div class="avg">LO Avg: {{ officer.avg_inhouse_opening }}</div>
         </div>
         <div class="stat-box blue">
           <div class="number">{{ officer.assigned_opening }}</div>
           <div class="label">assigned cases</div>
-          <div class="avg">LO Average: {{ officer.avg_assigned_opening }}</div>
+          <div class="avg">LO Avg: {{ officer.avg_assigned_opening }}</div>
         </div>
       </div>
 
-      <div class="stat-column yellow-column middle-column"> <div class="stat-box yellow header-box">BETWEEN {{ officer.period.month_start }} TO {{ officer.period.month_end }}, YOU HAVE</div>
+      <div class="stat-column yellow-column middle-column">
         <div class="stat-box yellow">
           <div class="number">+{{ officer.inhouse_added }}</div>
-          <div class="label">new in-house cases</div>
-          <div class="avg">LO Average: +{{ officer.avg_inhouse_added }}</div>
+          <div class="label">new in-house</div>
+          <div class="avg">LO Avg: +{{ officer.avg_inhouse_added }}</div>
         </div>
         <div class="stat-box yellow">
           <div class="number">-{{ officer.inhouse_nfa_712 }}</div>
-          <div class="label">completed (nfa 7, 12) in-house cases</div>
-          <div class="avg">LO Average: -{{ officer.avg_inhouse_nfa_712 }}</div>
+          <div class="label">completed in-house</div>
+          <div class="avg">LO Avg: -{{ officer.avg_inhouse_nfa_712 }}</div>
         </div>
         <div class="stat-box yellow">
           <div class="number">-{{ officer.inhouse_nfa_others }}</div>
-          <div class="label">closed (nfa-others) in-house cases</div>
-          <div class="avg">LO Average: -{{ officer.avg_inhouse_nfa_others }}</div>
+          <div class="label">closed in-house</div>
+          <div class="avg">LO Avg: -{{ officer.avg_inhouse_nfa_others }}</div>
         </div>
         <div class="stat-box yellow">
           <div class="number">-{{ officer.inhouse_reassigned }}</div>
-          <div class="label">reassigned to others in-house cases</div>
-          <div class="avg">LO Average: -{{ officer.avg_inhouse_reassigned }}</div>
+          <div class="label">reassigned in-house</div>
+          <div class="avg">LO Avg: -{{ officer.avg_inhouse_reassigned }}</div>
         </div>
         <div class="stat-box yellow">
           <div class="number">+{{ officer.assigned_added }}</div>
-          <div class="label">new assigned cases</div>
-          <div class="avg">LO Average: +{{ officer.avg_assigned_added }}</div>
+          <div class="label">new assigned</div>
+          <div class="avg">LO Avg: +{{ officer.avg_assigned_added }}</div>
         </div>
         <div class="stat-box yellow">
           <div class="number">-{{ officer.assigned_nfa_712 }}</div>
-          <div class="label">completed (nfa 7, 12) assigned cases</div>
-          <div class="avg">LO Average: -{{ officer.avg_assigned_nfa_712 }}</div>
+          <div class="label">completed assigned</div>
+          <div class="avg">LO Avg: -{{ officer.avg_assigned_nfa_712 }}</div>
         </div>
         <div class="stat-box yellow">
           <div class="number">-{{ officer.assigned_nfa_others }}</div>
-          <div class="label">closed (nfa-others) assigned cases</div>
-          <div class="avg">LO Average: -{{ officer.avg_assigned_nfa_others }}</div>
+          <div class="label">closed assigned</div>
+          <div class="avg">LO Avg: -{{ officer.avg_assigned_nfa_others }}</div>
         </div>
         <div class="stat-box yellow">
           <div class="number">-{{ officer.assigned_reassigned }}</div>
-          <div class="label">reassigned to others assigned cases</div>
-          <div class="avg">LO Average: -{{ officer.avg_assigned_reassigned }}</div>
+          <div class="label">reassigned assigned</div>
+          <div class="avg">LO Avg: -{{ officer.avg_assigned_reassigned }}</div>
         </div>
       </div>
 
-      <div class="stat-column green-column"> <div class="stat-box green header-box">ON {{ officer.period.date_end_verbose }}, YOU HAVE</div>
+      <div class="stat-column green-column">
         <div class="stat-box green">
           <div class="number">={{ officer.inhouse_end }}</div>
           <div class="label">in-house cases</div>
-          <div class="avg">LO Average: {{ officer.avg_inhouse_end }}</div>
+          <div class="avg">LO Avg: {{ officer.avg_inhouse_end }}</div>
         </div>
         <div class="stat-box green">
           <div class="number">={{ officer.assigned_end }}</div>
           <div class="label">assigned cases</div>
-          <div class="avg">LO Average: {{ officer.avg_assigned_end }}</div>
+          <div class="avg">LO Avg: {{ officer.avg_assigned_end }}</div>
         </div>
       </div>
     </div>
