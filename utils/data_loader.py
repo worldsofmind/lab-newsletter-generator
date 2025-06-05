@@ -1,15 +1,19 @@
-# data_loader.py
 import pandas as pd
 import re
 from utils.encoding import detect_encoding
 
 def extract_dates_from_columns(columns):
     date_pattern = r"(\d{2}/\d{2}/\d{4})"
+    extracted_dates = []
     for col in columns:
         matches = re.findall(date_pattern, str(col))
-        if len(matches) >= 2:
-            return matches[0], matches[1]
-    raise ValueError("Could not infer date range from column headers.")
+        if matches:
+            extracted_dates.extend(matches)
+    if len(extracted_dates) >= 2:
+        # Return first and last detected dates in sorted order
+        unique_dates = sorted(set(pd.to_datetime(extracted_dates, dayfirst=True)))
+        return unique_dates[0].strftime('%d/%m/%Y'), unique_dates[-1].strftime('%d/%m/%Y')
+    raise ValueError("❌ Could not infer start and end dates from column headers.")
 
 def detect_header_and_load_csv(file):
     encoding = detect_encoding(file)

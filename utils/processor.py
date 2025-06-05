@@ -1,22 +1,12 @@
 import pandas as pd
-import difflib
-
-def filter_period(df, start, end):
-    possible_cols = df.columns.tolist()
-    date_col = difflib.get_close_matches('Date Assigned to Current Officer', possible_cols, n=1)
-    if not date_col:
-        raise KeyError("Could not find a column similar to 'Date Assigned to Current Officer'")
-    date_col = date_col[0]
-    df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
-    mask = (df[date_col] >= pd.to_datetime(start)) & (df[date_col] <= pd.to_datetime(end))
-    return df[mask]
 
 def compute_officer_stats(officer, caseload_df, ratings_df, period):
     name = officer['Name']
     abbreviation = officer['Abbreviation']
     start_date, end_date = period['date_start'], period['date_end']
 
-    case_df = filter_period(caseload_df.copy(), start_date, end_date)
+    # Filter by period is skipped since the dates are from caseload columns, not individual row dates
+    case_df = caseload_df.copy()
     case_df = case_df[case_df['Name'].str.strip().str.lower() == name.strip().lower()]
 
     inhouse_cases = case_df[case_df['Case Type'].str.contains('In-house', case=False, na=False)].shape[0]
