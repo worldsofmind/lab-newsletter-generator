@@ -41,7 +41,7 @@ if ratings_file and caseload_file and namelist_file:
         if selected_officer != "-- Select --":
             officer_row = namelist_df[namelist_df['Name'] == selected_officer].iloc[0]
             try:
-                officer_report = compute_officer_stats(officer_row, caseload_df, ratings_df, period)
+            officer_report = compute_officer_stats(officer_row, caseload_df, ratings_df, period, caseload_df)
                 officer_report["period"] = period
                 render_newsletters([officer_report])
                 st.success(f"✅ Newsletter generated for {selected_officer}.")
