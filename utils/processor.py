@@ -11,13 +11,23 @@ SURVEY_QUESTIONS = [
     "I am overall satisfied with LAB’s services"
 ]
 
+def clean_columns(df):
+    df.columns = df.columns.map(lambda x: re.sub(r"\s+", " ", str(x)).strip())
+    return df
+
+def find_column(columns, keyword, date=None):
+    for col in columns:
+        if keyword.lower() in col.lower():
+            if date is None or date in col:
+                return col
+    return None
+
 def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_caseload_df):
     officer_name = officer_row["Name"].strip().lower()
     stats = defaultdict(lambda: "N/A")
 
-    # Clean and normalize columns
-    case_load_df.columns = case_load_df.columns.str.replace('\n', ' ', regex=True).str.replace('  ', ' ', regex=True).str.strip()
-    all_caseload_df.columns = case_load_df.columns
+    case_load_df = clean_columns(case_load_df)
+    all_caseload_df = clean_columns(all_caseload_df)
 
     case_row = case_load_df[case_load_df["Name"].str.strip().str.lower() == officer_name]
     case_row = case_row.iloc[0] if not case_row.empty else pd.Series(dtype=object)
@@ -25,53 +35,54 @@ def compute_officer_stats(officer_row, case_load_df, ratings_df, period, all_cas
     def _get_value(df_row, col):
         return pd.to_numeric(df_row.get(col, 0), errors="coerce")
 
-    def get_stat(col):
-        return _get_value(case_row, col) if col in case_row else 0
+    def get_stat(keyword, date=None):
+        col = find_column(case_load_df.columns, keyword, date)
+        return _get_value(case_row, col) if col else 0
 
     # In-house
-    stats["inhouse_opening"] = get_stat(f"In-house Caseload as at {period['date_start']}")
-    stats["inhouse_end"] = get_stat(f"In-house Caseload as at {period['date_end']}")
-    stats["inhouse_added"] = get_stat(f"Additional In-house Cases Between {period['date_start']} to {period['date_end']}")
-    nfa1 = get_stat(f"In-house Cases NFA-07 and NFA-12 Between {period['date_start']} to {period['date_end']}")
-    nfa2 = get_stat(f"In-house Cases NFA-others Between {period['date_start']} to {period['date_end']}")
+    stats["inhouse_opening"] = get_stat("In-house Caseload as at", period["date_start"])
+    stats["inhouse_end"] = get_stat("In-house Caseload as at", period["date_end"])
+    stats["inhouse_added"] = get_stat("Additional In-house Cases Between", period["date_start"])
+    nfa1 = get_stat("In-house Cases NFA-07 and NFA-12", period["date_start"])
+    nfa2 = get_stat("In-house Cases NFA-others", period["date_start"])
     stats["inhouse_nfa"] = nfa1 + nfa2
-    removed = get_stat(f"Total Removed In-house Cases Between {period['date_start']} to {period['date_end']}")
+    removed = get_stat("Total Removed In-house Cases Between", period["date_start"])
     stats["inhouse_removed"] = removed
     stats["inhouse_reassigned"] = max(removed - stats["inhouse_nfa"], 0)
 
     # Assigned
-    stats["assigned_opening"] = get_stat(f"Assigned Caseload as at {period['date_start']}")
-    stats["assigned_end"] = get_stat(f"Assigned Caseload as at {period['date_end']}")
-    stats["assigned_added"] = get_stat(f"Additional Assigned Cases Between {period['date_start']} to {period['date_end']}")
-    na1 = get_stat(f"Assigned Cases NFA-07 Between {period['date_start']} to {period['date_end']}")
-    na2 = get_stat(f"Assigned Cases NFA-others Between {period['date_start']} to {period['date_end']}")
+    stats["assigned_opening"] = get_stat("Assigned Caseload as at", period["date_start"])
+    stats["assigned_end"] = get_stat("Assigned Caseload as at", period["date_end"])
+    stats["assigned_added"] = get_stat("Additional Assigned Cases Between", period["date_start"])
+    na1 = get_stat("Assigned Cases NFA-07", period["date_start"])
+    na2 = get_stat("Assigned Cases NFA-others", period["date_start"])
     stats["assigned_nfa"] = na1 + na2
-    aremoved = get_stat(f"Total Removed Assigned Cases Between {period['date_start']} to {period['date_end']}")
+    aremoved = get_stat("Total Removed Assigned Cases Between", period["date_start"])
     stats["assigned_removed"] = aremoved
     stats["assigned_reassigned"] = max(aremoved - stats["assigned_nfa"], 0)
 
-    def avg(col_name):
-        values = pd.to_numeric(all_caseload_df[col_name], errors="coerce").dropna()
+    def avg(keyword, date=None):
+        col = find_column(all_caseload_df.columns, keyword, date)
+        if not col:
+            return "N/A"
+        values = pd.to_numeric(all_caseload_df[col], errors="coerce").dropna()
         return round(values.mean(), 1) if not values.empty else "N/A"
 
     avg_map = {
-        "avg_inhouse_opening": f"In-house Caseload as at {period['date_start']}",
-        "avg_inhouse_end": f"In-house Caseload as at {period['date_end']}",
-        "avg_assigned_opening": f"Assigned Caseload as at {period['date_start']}",
-        "avg_assigned_end": f"Assigned Caseload as at {period['date_end']}",
-        "avg_inhouse_added": f"Additional In-house Cases Between {period['date_start']} to {period['date_end']}",
-        "avg_inhouse_nfa": f"In-house Cases NFA-07 and NFA-12 Between {period['date_start']} to {period['date_end']}",
-        "avg_assigned_added": f"Additional Assigned Cases Between {period['date_start']} to {period['date_end']}",
-        "avg_assigned_nfa": f"Assigned Cases NFA-07 Between {period['date_start']} to {period['date_end']}"
+        "avg_inhouse_opening": ("In-house Caseload as at", period["date_start"]),
+        "avg_inhouse_end": ("In-house Caseload as at", period["date_end"]),
+        "avg_assigned_opening": ("Assigned Caseload as at", period["date_start"]),
+        "avg_assigned_end": ("Assigned Caseload as at", period["date_end"]),
+        "avg_inhouse_added": ("Additional In-house Cases Between", period["date_start"]),
+        "avg_inhouse_nfa": ("In-house Cases NFA-07 and NFA-12", period["date_start"]),
+        "avg_assigned_added": ("Additional Assigned Cases Between", period["date_start"]),
+        "avg_assigned_nfa": ("Assigned Cases NFA-07", period["date_start"]),
     }
 
-    for key, col in avg_map.items():
-        if col in all_caseload_df.columns:
-            stats[key] = avg(col)
-        else:
-            stats[key] = "N/A"
+    for key, (keyword, date) in avg_map.items():
+        stats[key] = avg(keyword, date)
 
-    # Ratings logic (unchanged)
+    # Ratings section (unchanged)
     ratings_df.columns = ratings_df.columns.str.strip().str.lower()
     ratings_df["name"] = ratings_df["name"].astype(str).str.strip().str.lower()
     ratings_df["assigned out indicator"] = ratings_df["assigned out indicator"].astype(str).str.lower().str.strip()
