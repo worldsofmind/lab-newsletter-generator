@@ -1,42 +1,18 @@
 
 import os
-import asyncio
 from jinja2 import Environment, FileSystemLoader
-from pyppeteer import launch
+from datetime import datetime
 
-# Point to the templates directory explicitly
-TEMPLATE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates"))
-OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "generated")
+def render_newsletters(reports, output_dir="generated"):
+    template_dir = os.path.join(os.path.dirname(__file__), "..", "templates")
+    env = Environment(loader=FileSystemLoader(template_dir))
+    template = env.get_template("newsletter.html")
 
-env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
-template = env.get_template("newsletter.html")
-
-async def render_newsletter_to_png(input_path, output_path):
-    browser = await launch()
-    page = await browser.newPage()
-    await page.goto("file://" + os.path.abspath(input_path))
-    await page.screenshot({'path': output_path, 'fullPage': True})
-    await browser.close()
-
-def render_newsletters(reports):
-    if not os.path.exists(OUTPUT_DIR):
-        os.makedirs(OUTPUT_DIR)
+    os.makedirs(output_dir, exist_ok=True)
 
     for report in reports:
-        filename = f"{report['abbreviation']}_Newsletter"
-        html_path = os.path.join(OUTPUT_DIR, f"{filename}.html")
-        png_path = os.path.join(OUTPUT_DIR, f"{filename}.png")
-
-        with open(html_path, "w", encoding="utf-8") as f:
-            f.write(template.render(**report))
-
-        try:
-            try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-
-            loop.run_until_complete(render_newsletter_to_png(html_path, png_path))
-        except Exception as e:
-            print(f"❌ Error rendering PNG for {filename}: {e}")
+        html = template.render(officer=report)
+        filename = f"{report['abbreviation']}_Newsletter.html"
+        file_path = os.path.join(output_dir, filename)
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(html)
