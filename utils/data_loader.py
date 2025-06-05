@@ -1,28 +1,31 @@
 
 import pandas as pd
 import re
-from utils.encoding import detect_encoding
 from datetime import datetime
+from utils.encoding import detect_encoding
 
 def extract_dates_from_columns(columns):
-    date_pattern = r"(\d{2}/\d{2}/\d{4})"
-    matches = re.findall(date_pattern, " ".join(columns))
-    if len(matches) >= 2:
-        try:
-            unique_dates = sorted(set(datetime.strptime(d, "%d/%m/%Y") for d in matches))
-            date_start = unique_dates[0]
-            date_end = unique_dates[-1]
-            return {
-                "date_start": date_start.strftime("%d/%m/%Y"),
-                "date_end": date_end.strftime("%d/%m/%Y"),
-                "date_start_verbose": date_start.strftime("%d %B %Y").upper(),
-                "date_end_verbose": date_end.strftime("%d %B %Y").upper(),
-                "month_start": date_start.strftime("%b").upper(),
-                "month_end": date_end.strftime("%b").upper()
-            }
-        except Exception:
-            pass
-    raise ValueError("Could not extract at least two valid dates from column headers.")
+    start_date, end_date = None, None
+    for col in columns:
+        matches = re.findall(r"Total\s+Caseload\s+as\s+at\s+(\d{2}/\d{2}/\d{4})", col, flags=re.IGNORECASE)
+        if matches:
+            if not start_date:
+                start_date = matches[0]
+            else:
+                end_date = matches[0]
+                break
+    if start_date and end_date:
+        start_obj = datetime.strptime(start_date, "%d/%m/%Y")
+        end_obj = datetime.strptime(end_date, "%d/%m/%Y")
+        return {
+            "date_start": start_date,
+            "date_end": end_date,
+            "date_start_verbose": start_obj.strftime("%d %B %Y").upper(),
+            "date_end_verbose": end_obj.strftime("%d %B %Y").upper(),
+            "month_start": start_obj.strftime("%b").upper(),
+            "month_end": end_obj.strftime("%b").upper()
+        }
+    raise ValueError("Could not find the two required 'Total Caseload as at DD/MM/YYYY' columns.")
 
 def detect_header_and_load_csv(file):
     encoding = detect_encoding(file)
