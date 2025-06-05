@@ -7,3 +7,4 @@ yagmail
 fuzzywuzzy
 python-Levenshtein
 chardet
+pyppeteer
