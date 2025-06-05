@@ -444,7 +444,6 @@ $(document).ready(function () {
     document.getElementsByTagName("head")[0].appendChild(script);
   })();
 </script>
-
 <h4>Survey Results (Average Rating)</h4>
 {% if survey_ratings %}
 <table class="table table-bordered">
@@ -482,6 +481,48 @@ $(document).ready(function () {
         <tr><td>{{ item.case_ref }}</td><td>{{ item.applicant }}</td><td>{{ item.score }}</td></tr>
     {% endfor %}
     </tbody>
+</table>
+{% else %}
+<p>You do not have any assigned case ratings this quarter.</p>
+{% endif %}
+
+<h4>Survey Results (Average Rating)</h4>
+{% if survey_ratings %}
+<table class="table table-bordered">
+<thead><tr><th>Question</th><th>Average Score</th></tr></thead>
+<tbody>
+  {% for question, score in survey_ratings.items() %}
+    <tr><td>{{ question }}</td><td>{{ score }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>You do not have any survey ratings this quarter.</p>
+{% endif %}
+
+<h4>Case Ratings (In-House Cases)</h4>
+{% if inhouse_case_ratings %}
+<table class="table table-striped">
+<thead><tr><th>Case Ref</th><th>Applicant</th><th>Average Score</th></tr></thead>
+<tbody>
+  {% for item in inhouse_case_ratings %}
+    <tr><td>{{ item.case_ref }}</td><td>{{ item.applicant }}</td><td>{{ item.score }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>You do not have any in-house case ratings this quarter.</p>
+{% endif %}
+
+<h4>Case Ratings (Assigned Cases)</h4>
+{% if assigned_case_ratings %}
+<table class="table table-striped">
+<thead><tr><th>Case Ref</th><th>Applicant</th><th>Average Score</th></tr></thead>
+<tbody>
+  {% for item in assigned_case_ratings %}
+    <tr><td>{{ item.case_ref }}</td><td>{{ item.applicant }}</td><td>{{ item.score }}</td></tr>
+  {% endfor %}
+  </tbody>
 </table>
 {% else %}
 <p>You do not have any assigned case ratings this quarter.</p>
