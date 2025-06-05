@@ -25,7 +25,7 @@ if ratings_file and caseload_file and namelist_file:
 
             all_reports = []
             for _, officer_row in namelist_df.iterrows():
-                officer_report = compute_officer_stats(officer_row, caseload_df, ratings_df, period)
+                officer_report = compute_officer_stats(officer_row, caseload_df, ratings_df)
                 all_reports.append(officer_report)
 
             output_dir = Path("output")
