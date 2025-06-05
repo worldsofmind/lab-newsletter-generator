@@ -1,97 +1,103 @@
 
 import pandas as pd
-import numpy as np
-from datetime import datetime
 
-def compute_officer_stats(officer_row, caseload_df, ratings_df, period, all_caseload_df):
-    abbreviation = officer_row['abbreviation']
-    officer_name = officer_row['name']
-    function = officer_row['function']
+def compute_officer_stats(officer_row, case_load_df, ratings_df, period):
+    officer_name = officer_row["name"]
+    abbreviation = officer_row["abbreviation"]
+    function = officer_row["function"]
 
-    # Filter officer caseload
-    officer_cases = caseload_df[caseload_df['officer'] == abbreviation]
-    officer_all_cases = all_caseload_df[all_caseload_df['officer'] == abbreviation]
+    # Filter relevant caseload
+    case_data = case_load_df[case_load_df["name"] == officer_name]
 
-    # Determine peer group for averages
-    peer_group = all_caseload_df[all_caseload_df['function'] == function]
+    # Dates
+    date_start = pd.to_datetime(period["date_start"])
+    date_end = pd.to_datetime(period["date_end"])
 
-    def safe_mean(series):
-        return int(round(series.mean())) if not series.empty else 'N/A'
+    # Filter for average calculation within officer function group
+    group_df = case_load_df[case_load_df["function"] == function]
+    group_means = group_df.mean(numeric_only=True)
 
-    # Section 1: Opening
-    inhouse_opening = officer_cases['In-house Caseload as at ' + period['date_start']].sum()
-    assigned_opening = officer_cases['Assigned Caseload as at ' + period['date_start']].sum()
+    def safe_get_mean(col):
+        return round(group_means.get(col, 0), 1)
 
-    avg_inhouse_opening = safe_mean(peer_group['In-house Caseload as at ' + period['date_start']])
-    avg_assigned_opening = safe_mean(peer_group['Assigned Caseload as at ' + period['date_start']])
+    def safe_get_value(row, col):
+        return int(row[col]) if col in row and pd.notna(row[col]) else 0
 
-    # Section 2: Changes in period
-    inhouse_added = officer_cases['In-house Cases Received'].sum()
-    inhouse_nfa_712 = officer_cases['In-house Cases NFA (7, 12)'].sum()
-    inhouse_nfa_others = officer_cases['In-house Cases NFA (Others)'].sum()
-    inhouse_reassigned = officer_cases['In-house Reassigned to Others'].sum()
-
-    assigned_added = officer_cases['Assigned Cases Received'].sum()
-    assigned_nfa_712 = officer_cases['Assigned Cases NFA (7, 12)'].sum()
-    assigned_nfa_others = officer_cases['Assigned Cases NFA (Others)'].sum()
-    assigned_reassigned = officer_cases['Assigned Reassigned to Others'].sum()
-
-    avg_inhouse_added = safe_mean(peer_group['In-house Cases Received'])
-    avg_inhouse_nfa_712 = safe_mean(peer_group['In-house Cases NFA (7, 12)'])
-    avg_inhouse_nfa_others = safe_mean(peer_group['In-house Cases NFA (Others)'])
-    avg_inhouse_reassigned = safe_mean(peer_group['In-house Reassigned to Others'])
-
-    avg_assigned_added = safe_mean(peer_group['Assigned Cases Received'])
-    avg_assigned_nfa_712 = safe_mean(peer_group['Assigned Cases NFA (7, 12)'])
-    avg_assigned_nfa_others = safe_mean(peer_group['Assigned Cases NFA (Others)'])
-    avg_assigned_reassigned = safe_mean(peer_group['Assigned Reassigned to Others'])
-
-    # Section 3: Closing
-    inhouse_end = officer_cases['In-house Caseload as at ' + period['date_end']].sum()
-    assigned_end = officer_cases['Assigned Caseload as at ' + period['date_end']].sum()
-
-    avg_inhouse_end = safe_mean(peer_group['In-house Caseload as at ' + period['date_end']])
-    avg_assigned_end = safe_mean(peer_group['Assigned Caseload as at ' + period['date_end']])
-
-    return {
-        'name': officer_name,
-        'abbreviation': abbreviation,
-        'function': function,
-        'period': {
-            'date_start': period['date_start'],
-            'date_end': period['date_end'],
-            'date_start_verbose': period['date_start_verbose'],
-            'date_end_verbose': period['date_end_verbose'],
-            'month_start': period['month_start'],
-            'month_end': period['month_end']
-        },
-        'inhouse_opening': inhouse_opening,
-        'assigned_opening': assigned_opening,
-        'avg_inhouse_opening': avg_inhouse_opening,
-        'avg_assigned_opening': avg_assigned_opening,
-
-        'inhouse_added': inhouse_added,
-        'inhouse_nfa_712': inhouse_nfa_712,
-        'inhouse_nfa_others': inhouse_nfa_others,
-        'inhouse_reassigned': inhouse_reassigned,
-
-        'assigned_added': assigned_added,
-        'assigned_nfa_712': assigned_nfa_712,
-        'assigned_nfa_others': assigned_nfa_others,
-        'assigned_reassigned': assigned_reassigned,
-
-        'avg_inhouse_added': avg_inhouse_added,
-        'avg_inhouse_nfa_712': avg_inhouse_nfa_712,
-        'avg_inhouse_nfa_others': avg_inhouse_nfa_others,
-        'avg_inhouse_reassigned': avg_inhouse_reassigned,
-
-        'avg_assigned_added': avg_assigned_added,
-        'avg_assigned_nfa_712': avg_assigned_nfa_712,
-        'avg_assigned_nfa_others': avg_assigned_nfa_others,
-        'avg_assigned_reassigned': avg_assigned_reassigned,
-
-        'inhouse_end': inhouse_end,
-        'assigned_end': assigned_end,
-        'avg_inhouse_end': avg_inhouse_end,
-        'avg_assigned_end': avg_assigned_end
+    stats = {
+        "name": officer_name,
+        "abbreviation": abbreviation,
+        "function": function,
+        "period": {
+            "date_start": period["date_start"],
+            "date_end": period["date_end"],
+            "date_start_verbose": period.get("date_start_verbose", ""),
+            "date_end_verbose": period.get("date_end_verbose", ""),
+            "month_start": period.get("month_start", ""),
+            "month_end": period.get("month_end", "")
+        }
     }
+
+    # OPENING
+    stats["inhouse_opening"] = safe_get_value(case_data.iloc[0], "inhouse_opening")
+    stats["avg_inhouse_opening"] = safe_get_mean("inhouse_opening")
+    stats["assigned_opening"] = safe_get_value(case_data.iloc[0], "assigned_opening")
+    stats["avg_assigned_opening"] = safe_get_mean("assigned_opening")
+
+    # IN-PERIOD
+    for col in ["inhouse_added", "inhouse_nfa_712", "inhouse_nfa_others",
+                "assigned_added", "assigned_nfa_712", "assigned_nfa_others"]:
+        stats[col] = safe_get_value(case_data.iloc[0], col)
+        stats["avg_" + col] = safe_get_mean(col)
+
+    # REASSIGNED calculations
+    stats["inhouse_end"] = safe_get_value(case_data.iloc[0], "inhouse_end")
+    stats["assigned_end"] = safe_get_value(case_data.iloc[0], "assigned_end")
+
+    stats["inhouse_reassigned"] = (
+        stats["inhouse_opening"] + stats["inhouse_added"]
+        - stats["inhouse_nfa_712"] - stats["inhouse_nfa_others"]
+        - stats["inhouse_end"]
+    )
+    stats["avg_inhouse_reassigned"] = "N/A"
+
+    stats["assigned_reassigned"] = (
+        stats["assigned_opening"] + stats["assigned_added"]
+        - stats["assigned_nfa_712"] - stats["assigned_nfa_others"]
+        - stats["assigned_end"]
+    )
+    stats["avg_assigned_reassigned"] = "N/A"
+
+    # ENDING
+    stats["avg_inhouse_end"] = safe_get_mean("inhouse_end")
+    stats["avg_assigned_end"] = safe_get_mean("assigned_end")
+
+    # Ratings – fallback if missing
+    officer_ratings = ratings_df[ratings_df["LO"] == abbreviation]
+    survey = {}
+    if not officer_ratings.empty:
+        rating_cols = [col for col in officer_ratings.columns if "Q" in col]
+        for q in rating_cols:
+            valid_scores = officer_ratings[q].dropna().astype(float)
+            if not valid_scores.empty:
+                survey[q] = round(valid_scores.mean(), 1)
+    stats["survey_ratings"] = survey if survey else None
+
+    # Case ratings (in-house & assigned)
+    stats["inhouse_case_ratings"] = []
+    stats["assigned_case_ratings"] = []
+
+    for _, row in officer_ratings.iterrows():
+        if row.get("Case Type") == "In-House":
+            stats["inhouse_case_ratings"].append({
+                "case_ref": row.get("Case Ref", ""),
+                "applicant": row.get("Applicant", ""),
+                "score": row.get("Avg", "")
+            })
+        elif row.get("Case Type") == "Assigned":
+            stats["assigned_case_ratings"].append({
+                "case_ref": row.get("Case Ref", ""),
+                "applicant": row.get("Applicant", ""),
+                "score": row.get("Avg", "")
+            })
+
+    return stats
