@@ -1,8 +1,12 @@
 
 import pandas as pd
-from collections import defaultdict
+import re
 
 def compute_officer_stats(row, caseload_df, ratings_df, period, all_caseload_df):
+    # Clean up column headers before use
+    caseload_df.columns = caseload_df.columns.map(lambda x: re.sub(r"\s+", " ", str(x)).strip())
+    all_caseload_df.columns = all_caseload_df.columns.map(lambda x: re.sub(r"\s+", " ", str(x)).strip())
+
     name = row["Name"]
     abbreviation = row["Abbreviation"]
     function = row["self_type"]
@@ -29,7 +33,7 @@ def compute_officer_stats(row, caseload_df, ratings_df, period, all_caseload_df)
             _get_value(officer_data, "Assigned Cases NFA- 07 Between 08/05/2024 to 02/08/2024")
             + _get_value(officer_data, "Assigned Cases NFA- others Between 08/05/2024 to 02/08/2024")
         ),
-        "assigned_closed": "N/A",  # no closed column provided
+        "assigned_closed": "N/A",
         "assigned_end": _get_value(officer_data, "Assigned Caseload as at 02/08/2024"),
     }
 
