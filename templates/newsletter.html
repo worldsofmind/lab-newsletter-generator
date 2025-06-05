@@ -1,111 +1,80 @@
-<!DOCTYPE html>
 
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-<meta charset="utf-8"/>
-<title>LAB Officer Newsletter</title>
-<style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            color: #333;
-        }
-        .header {
-            text-align: center;
-        }
-        .header h1 {
-            margin-bottom: 0;
-        }
-        .header h2 {
-            margin-top: 5px;
-            color: #666;
-        }
-        .section {
-            margin-top: 30px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 8px;
-            text-align: center;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
+    <meta charset="UTF-8">
+    <title>LAB Officer Newsletter</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1 { font-size: 24px; }
+        h2 { font-size: 20px; margin-top: 40px; }
+        h3 { font-size: 18px; margin-top: 30px; }
+        h4 { font-size: 16px; margin-top: 20px; }
+        table, th, td { border: 1px solid black; border-collapse: collapse; padding: 5px; }
+        th { background-color: #f2f2f2; }
     </style>
 </head>
 <body>
-<div class="header">
-<h1>Personal Statistics Newsletter</h1>
-<h2>{{ period.date_start }} – {{ period.date_end }}</h2>
-<h3>{{ name }} ({{ abbreviation }})</h3>
-</div>
-<div class="section">
-<h3>Case Statistics</h3>
-<table>
-<tr>
-<th>Type</th>
-<th>Case Count</th>
-</tr>
-<tr>
-<td>In-house</td>
-<td>{{ inhouse_count }}</td>
-</tr>
-<tr>
-<td>Assigned</td>
-<td>{{ assigned_count }}</td>
-</tr>
-</table>
-</div>
-<div class="section">
-<h3>Average Rating</h3>
-<p>“I am overall satisfied with LAB’s services”: <strong>{{ avg_rating }}</strong></p>
-</div>
+    <h1>{{ officer.name }} ({{ officer.abbreviation }})</h1>
+    <p><strong>Function:</strong> {{ officer.function }}</p>
+    <p><strong>Period:</strong> {{ officer.period.date_start }} to {{ officer.period.date_end }}</p>
 
-<h4>Survey Results (Average Rating)</h4>
-{% if survey_ratings %}
-<table class="table table-bordered">
-<thead><tr><th>Question</th><th>Average Score</th></tr></thead>
-<tbody>
-  {% for question, score in survey_ratings.items() %}
-    <tr><td>{{ question }}</td><td>{{ score }}</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<p>You do not have any survey ratings this quarter.</p>
-{% endif %}
+    <h2>Case Statistics</h2>
+    <h3>In-House Cases</h3>
+    <ul>
+        <li>Opening caseload: {{ officer.inhouse_opening }}</li>
+        <li>Additional cases: {{ officer.inhouse_added }}</li>
+        <li>NFA: {{ officer.inhouse_nfa }}</li>
+        <li>Closing caseload: {{ officer.inhouse_end }}</li>
+        <li>Average opening: {{ officer.avg_inhouse_opening }}</li>
+        <li>Average added: {{ officer.avg_inhouse_added }}</li>
+        <li>Average closing: {{ officer.avg_inhouse_end }}</li>
+    </ul>
 
-<h4>Case Ratings (In-House Cases)</h4>
-{% if inhouse_case_ratings %}
-<table class="table table-striped">
-<thead><tr><th>Case Ref</th><th>Applicant</th><th>Average Score</th></tr></thead>
-<tbody>
-  {% for item in inhouse_case_ratings %}
-    <tr><td>{{ item.case_ref }}</td><td>{{ item.applicant }}</td><td>{{ item.score }}</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<p>You do not have any in-house case ratings this quarter.</p>
-{% endif %}
+    <h3>Assigned Cases</h3>
+    <ul>
+        <li>Opening caseload: {{ officer.assigned_opening }}</li>
+        <li>Additional cases: {{ officer.assigned_added }}</li>
+        <li>NFA: {{ officer.assigned_nfa }}</li>
+        <li>Closing caseload: {{ officer.assigned_end }}</li>
+        <li>Average opening: {{ officer.avg_assigned_opening }}</li>
+        <li>Average added: {{ officer.avg_assigned_added }}</li>
+        <li>Average closing: {{ officer.avg_assigned_end }}</li>
+    </ul>
 
-<h4>Case Ratings (Assigned Cases)</h4>
-{% if assigned_case_ratings %}
-<table class="table table-striped">
-<thead><tr><th>Case Ref</th><th>Applicant</th><th>Average Score</th></tr></thead>
-<tbody>
-  {% for item in assigned_case_ratings %}
-    <tr><td>{{ item.case_ref }}</td><td>{{ item.applicant }}</td><td>{{ item.score }}</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<p>You do not have any assigned case ratings this quarter.</p>
-{% endif %}
+    <h2>Survey Results (Average Rating)</h2>
+    {% if officer.survey_ratings %}
+        <ul>
+        {% for q, score in officer.survey_ratings.items() %}
+            <li>{{ q }}: {{ score }}</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>You do not have any survey ratings this quarter.</p>
+    {% endif %}
+
+    <h2>Case Ratings (In-House Cases)</h2>
+    {% if officer.inhouse_case_ratings %}
+        <table>
+            <tr><th>Case Ref</th><th>Applicant</th><th>Average Score</th></tr>
+            {% for case in officer.inhouse_case_ratings %}
+                <tr><td>{{ case.case_ref }}</td><td>{{ case.applicant }}</td><td>{{ case.score }}</td></tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>You do not have any in-house case ratings this quarter.</p>
+    {% endif %}
+
+    <h2>Case Ratings (Assigned Cases)</h2>
+    {% if officer.assigned_case_ratings %}
+        <table>
+            <tr><th>Case Ref</th><th>Applicant</th><th>Average Score</th></tr>
+            {% for case in officer.assigned_case_ratings %}
+                <tr><td>{{ case.case_ref }}</td><td>{{ case.applicant }}</td><td>{{ case.score }}</td></tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>You do not have any assigned case ratings this quarter.</p>
+    {% endif %}
 </body>
 </html>
