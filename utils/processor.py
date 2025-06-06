@@ -5,7 +5,7 @@ import numpy as np
 def compute_officer_stats(officer_row, case_df, ratings_df):
     officer_name = officer_row['name']
     abbreviation = officer_row['abbreviation']
-    function = officer_row['Function']
+    function = officer_row['function']
     period = {
         "date_start": "08/05/2024",
         "date_end": "02/08/2024",
@@ -15,12 +15,12 @@ def compute_officer_stats(officer_row, case_df, ratings_df):
         "month_end": "Aug"
     }
 
-    group_col = "Function"
+    group_col = "function"
     peer_group = case_df[case_df[group_col] == function]
 
     # Extract statistics for the officer
     def safe_get(col):
-        return case_df.loc[case_df['Name'] == officer_name, col].values[0] if col in case_df.columns else 0
+        return case_df.loc[case_df['name'] == officer_name, col].values[0] if col in case_df.columns else 0
 
     def safe_mean(col):
         return round(peer_group[col].mean(), 1) if col in peer_group.columns else 'N/A'
