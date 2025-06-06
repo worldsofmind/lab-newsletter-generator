@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
 import os
-import io
-import zipfile
 from pathlib import Path
 
 from utils.data_loader import load_all_data
@@ -62,56 +60,55 @@ if ratings_file and caseload_file and namelist_file:
             if not output_dir.exists():
                 output_dir.mkdir(parents=True)
             else:
+                # Clear out any existing files to avoid stale downloads
                 for f in output_dir.glob("*"):
                     f.unlink()
             render_newsletters(all_reports, output_dir)
 
-            # … after render_newsletters(all_reports, output_dir) …
+            st.success("Newsletters generated successfully!")
+            st.markdown("### Download Individual Newsletters:")
 
-st.success("Newsletters generated successfully!")
-st.markdown("### Download Individual Newsletters:")
+            for report in all_reports:
+                abbr = report['abbreviation']
 
-for report in all_reports:
-    abbr = report['abbreviation']
+                # HTML
+                html_path = output_dir / f"{abbr}.html"
+                if html_path.exists():
+                    with open(html_path, "rb") as f_html:
+                        html_data = f_html.read()
+                    st.download_button(
+                        label=f"Download {abbr}.html",
+                        data=html_data,
+                        file_name=f"{abbr}.html",
+                        mime="text/html",
+                        key=f"download_html_{abbr}"
+                    )
 
-    # HTML
-    html_path = output_dir / f"{abbr}.html"
-    if html_path.exists():
-        with open(html_path, "rb") as f_html:
-            html_data = f_html.read()
-        st.download_button(
-            label=f"Download {abbr}.html",
-            data=html_data,
-            file_name=f"{abbr}.html",
-            mime="text/html",
-            key=f"download_html_{abbr}"
-        )
+                # PDF
+                pdf_path = output_dir / f"{abbr}.pdf"
+                if pdf_path.exists():
+                    with open(pdf_path, "rb") as f_pdf:
+                        pdf_data = f_pdf.read()
+                    st.download_button(
+                        label=f"Download {abbr}.pdf",
+                        data=pdf_data,
+                        file_name=f"{abbr}.pdf",
+                        mime="application/pdf",
+                        key=f"download_pdf_{abbr}"
+                    )
 
-    # PDF
-    pdf_path = output_dir / f"{abbr}.pdf"
-    if pdf_path.exists():
-        with open(pdf_path, "rb") as f_pdf:
-            pdf_data = f_pdf.read()
-        st.download_button(
-            label=f"Download {abbr}.pdf",
-            data=pdf_data,
-            file_name=f"{abbr}.pdf",
-            mime="application/pdf",
-            key=f"download_pdf_{abbr}"
-        )
-
-    # PNG
-    png_path = output_dir / f"{abbr}.png"
-    if png_path.exists():
-        with open(png_path, "rb") as f_png:
-            png_data = f_png.read()
-        st.download_button(
-            label=f"Download {abbr}.png",
-            data=png_data,
-            file_name=f"{abbr}.png",
-            mime="image/png",
-            key=f"download_png_{abbr}"
-        )
+                # PNG
+                png_path = output_dir / f"{abbr}.png"
+                if png_path.exists():
+                    with open(png_path, "rb") as f_png:
+                        png_data = f_png.read()
+                    st.download_button(
+                        label=f"Download {abbr}.png",
+                        data=png_data,
+                        file_name=f"{abbr}.png",
+                        mime="image/png",
+                        key=f"download_png_{abbr}"
+                    )
 
         except Exception as e:
             st.error(f"❌ An error occurred during processing: {e}")
