@@ -1,8 +1,7 @@
-
 import pandas as pd
 import re
 from datetime import datetime
-from utils.encoding import detect_encoding
+from utils.encoding import detect_encoding # Assuming this import path is correct
 
 def extract_dates_from_columns(columns):
     start_date, end_date = None, None
@@ -27,28 +26,39 @@ def extract_dates_from_columns(columns):
         }
     raise ValueError("Could not find the two required 'Total Caseload as at DD/MM/YYYY' columns.")
 
+
 def detect_header_and_load_csv(file):
     encoding = detect_encoding(file)
     file.seek(0)
     for skip in range(0, 15):
         try:
             df = pd.read_csv(file, skiprows=skip, encoding=encoding)
-            if 'Name' in df.columns or 'name' in df.columns:
+            # IMPORTANT CHANGE: Convert columns to lowercase and strip whitespace
+            df.columns = df.columns.map(str).str.lower().str.strip()
+            if 'name' in df.columns: # Check for lowercase 'name' now
                 return df
         except Exception:
             continue
     raise ValueError("Could not parse CSV file with known headers.")
 
+
 def load_all_data(ratings_file, caseload_file, namelist_file):
+    # Load ratings.csv
     ratings_encoding = detect_encoding(ratings_file)
     ratings_df = pd.read_csv(ratings_file, encoding=ratings_encoding)
+    # IMPORTANT CHANGE: Convert columns to lowercase and strip whitespace for ratings_df
+    ratings_df.columns = ratings_df.columns.map(str).str.lower().str.strip()
 
+    # Load namelist.csv
     namelist_encoding = detect_encoding(namelist_file)
     namelist_df = pd.read_csv(namelist_file, encoding=namelist_encoding)
-    namelist_df.columns = namelist_df.columns.str.strip()
+    # IMPORTANT CHANGE: Convert columns to lowercase and strip whitespace for namelist_df
+    namelist_df.columns = namelist_df.columns.str.lower().str.strip()
 
+    # Load case_load.csv using the helper function
     caseload_df = detect_header_and_load_csv(caseload_file)
-    caseload_df.columns = caseload_df.columns.map(str)
+    # The detect_header_and_load_csv function now handles lowercasing and stripping for caseload_df
 
     period = extract_dates_from_columns(caseload_df.columns)
+
     return ratings_df, caseload_df, namelist_df, period
