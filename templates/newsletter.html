@@ -173,9 +173,9 @@
     <h2>Case Statistics</h2>
 
     <div class="header-row">
-      <div class="header-box">ON {{ officer.period.date_start_verbose }}</div>
-      <div class="header-box">BETWEEN {{ officer.period.month_start }} TO {{ officer.period.month_end }}</div>
-      <div class="header-box">ON {{ officer.period.date_end_verbose }}</div>
+      <div class="header-box">ON {{ officer.period.date_start_verbose | upper }}</div>
+      <div class="header-box">BETWEEN {{ officer.period.month_start | upper }} TO {{ officer.period.month_end | upper }}</div>
+      <div class="header-box">ON {{ officer.period.date_end_verbose | upper }}</div>
     </div>
 
     <div class="case-statistics-wrapper">
