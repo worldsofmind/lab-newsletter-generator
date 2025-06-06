@@ -39,17 +39,17 @@ def compute_officer_stats(officer_row, case_df, ratings_df):
     inhouse_end        = safe_get(f"in-house caseload as at {period['date_end']}")
 
     # ── REASSIGNED IN‐HOUSE (computed) ─────────────────────────────────────────────
-    # Calculate “completed” in‐house cases as the sum of NFA-07+NFA-12 and NFA-others
+    # “Completed” in‐house cases = NFA‐07+NFA‐12 + NFA‐others
     inhouse_completed   = inhouse_nfa_712 + inhouse_nfa_others
     # Reassigned_in_house = actual_end – [ opening + added – completed ]
     inhouse_reassigned  = inhouse_end - ((inhouse_opening + inhouse_added) - inhouse_completed)
 
-    # In‐house average (across all officers)
+    # In‐house averages (across all officers)
     avg_inhouse_opening             = safe_mean(f"in-house caseload as at {period['date_start']}")
     avg_inhouse_added               = safe_mean(f"additional in-house cases between {period['date_start']} to {period['date_end']}")
     avg_inhouse_nfa_712             = safe_mean(f"in-house cases nfa- 07 and nfa-12 between {period['date_start']} to {period['date_end']}")
     avg_inhouse_nfa_others          = safe_mean(f"in-house cases nfa- others between {period['date_start']} to {period['date_end']}")
-    avg_inhouse_reassigned          = "N/A"  # If you want, compute across group similarly
+    avg_inhouse_reassigned          = "N/A"   # (optional: you can compute a group‐wide mean if desired)
     avg_inhouse_end                 = safe_mean(f"in-house caseload as at {period['date_end']}")
     avg_increase_decrease_inhouse   = safe_mean("increase /decrease of cases")
     avg_clearance_rate_inhouse      = safe_mean("clearance rate (%)")
@@ -64,32 +64,32 @@ def compute_officer_stats(officer_row, case_df, ratings_df):
     assigned_end        = safe_get(f"assigned caseload as at {period['date_end']}")
 
     # ── REASSIGNED ASSIGNED (computed) ──────────────────────────────────────────────
-    # Calculate “completed” assigned cases as the sum of NFA-07 and NFA-others
+    # “Completed” assigned = NFA‐07 + NFA‐others
     assigned_completed    = assigned_nfa_712 + assigned_nfa_others
     # Reassigned_assigned = actual_end – [ opening + added – completed ]
     assigned_reassigned   = assigned_end - ((assigned_opening + assigned_added) - assigned_completed)
 
-    # Assigned average (across all officers)
-    avg_assigned_opening     = safe_mean(f"assigned caseload as at {period['date_start']}")
-    avg_assigned_added       = safe_mean(f"additional assigned cases between {period['date_start']} to {period['date_end']}")
-    avg_assigned_nfa_712     = safe_mean(f"assigned cases nfa- 07 between {period['date_start']} to {period['date_end']}")
-    avg_assigned_nfa_others  = safe_mean(f"assigned cases nfa- others between {period['date_start']} to {period['date_end']}")
-    avg_assigned_reassigned  = "N/A"  # If you want, compute across group similarly
-    avg_assigned_end         = safe_mean(f"assigned caseload as at {period['date_end']}")
+    # Assigned averages (across all officers)
+    avg_assigned_opening       = safe_mean(f"assigned caseload as at {period['date_start']}")
+    avg_assigned_added         = safe_mean(f"additional assigned cases between {period['date_start']} to {period['date_end']}")
+    avg_assigned_nfa_712       = safe_mean(f"assigned cases nfa- 07 between {period['date_start']} to {period['date_end']}")
+    avg_assigned_nfa_others    = safe_mean(f"assigned cases nfa- others between {period['date_start']} to {period['date_end']}")
+    avg_assigned_reassigned    = "N/A"   # (optional: group‐wide mean if desired)
+    avg_assigned_end           = safe_mean(f"assigned caseload as at {period['date_end']}")
     avg_increase_decrease_assigned = safe_mean("increase/ decrease of cases")
     avg_clearance_rate_assigned    = safe_mean("clearance rate (%).1")
 
     #
     # ── TOTAL CASELOAD & OVERALL STATISTICS ─────────────────────────────────────────
     #
-    total_start          = safe_get(f"total caseload as at {period['date_start']}")
-    total_end            = safe_get(f"total caseload as at {period['date_end']}")
-    total_nfa_ed         = safe_get("total cases nfa-ed")
-    pct_change_overall   = safe_get("% increase or decrease")
+    total_start                        = safe_get(f"total caseload as at {period['date_start']}")
+    total_end                          = safe_get(f"total caseload as at {period['date_end']}")
+    total_nfa_ed                       = safe_get("total cases nfa-ed")
+    pct_change_overall                 = safe_get("% increase or decrease")
 
-    avg_total_caseload_start    = safe_mean(f"total caseload as at {period['date_start']}")
-    avg_total_caseload_end      = safe_mean(f"total caseload as at {period['date_end']}")
-    avg_total_cases_nfa_ed       = safe_mean("total cases nfa-ed")
+    avg_total_caseload_start           = safe_mean(f"total caseload as at {period['date_start']}")
+    avg_total_caseload_end             = safe_mean(f"total caseload as at {period['date_end']}")
+    avg_total_cases_nfa_ed             = safe_mean("total cases nfa-ed")
     avg_percentage_increase_decrease_overall = safe_mean("% increase or decrease")
 
     #
@@ -104,7 +104,7 @@ def compute_officer_stats(officer_row, case_df, ratings_df):
         # Period metadata
         "period": period,
 
-        # In-house stats
+        # In‐house stats
         "inhouse_opening": inhouse_opening,
         "inhouse_added": inhouse_added,
         "inhouse_nfa_712": inhouse_nfa_712,
