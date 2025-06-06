@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import datetime
@@ -6,6 +5,7 @@ from utils.data_loader import load_all_data
 from utils.processor import compute_officer_stats
 from utils.renderer import render_newsletters
 import os
+from pathlib import Path # <--- THIS IS THE MISSING LINE!
 
 st.set_page_config(page_title="LAB Officer Newsletter Generator", layout="centered")
 st.title("📬 LAB Officer Newsletter Generator")
