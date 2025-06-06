@@ -22,12 +22,9 @@ with st.sidebar:
 # --- MAIN LOGIC ---
 if ratings_file and caseload_file and namelist_file:
     try:
-        with st.spinner("Loading and processing data..."):
+        with st.spinner("Loading data and preparing officer list..."):
             ratings_df, caseload_df, namelist_df, period = load_all_data(ratings_file, caseload_file, namelist_file)
 
-        st.success("✅ Data loaded successfully. Now select officers.")
-
-        # --- Officer Selection UI ---
         # Get unique officer names for selection
         officer_names = namelist_df['name'].tolist()
         
@@ -38,12 +35,14 @@ if ratings_file and caseload_file and namelist_file:
             default=officer_names # By default, all officers are selected
         )
 
+        # Only proceed if officers are selected
         if selected_officers:
-            # Filter namelist_df based on selected officers
-            filtered_namelist_df = namelist_df[namelist_df['name'].isin(selected_officers)]
-
+            # The "Generate Newsletters" button is back!
             if st.button("Generate Newsletters"):
                 with st.spinner(f"Generating newsletters for {len(selected_officers)} officer(s)..."):
+                    # Filter namelist_df based on selected officers
+                    filtered_namelist_df = namelist_df[namelist_df['name'].isin(selected_officers)]
+
                     all_reports = []
                     for _, officer_row in filtered_namelist_df.iterrows(): # Loop through filtered officers
                         officer_report = compute_officer_stats(officer_row, caseload_df, ratings_df)
@@ -53,7 +52,7 @@ if ratings_file and caseload_file and namelist_file:
                     output_dir.mkdir(exist_ok=True)
                     render_newsletters(all_reports, output_dir)
 
-                st.success("✅ Newsletters generated successfully.")
+                st.success("✅ Newsletters generated successfully. Ready for download.")
 
                 # --- Individual Downloads ---
                 st.subheader("Download Individual Newsletters:")
@@ -69,7 +68,7 @@ if ratings_file and caseload_file and namelist_file:
                             data=html_content,
                             file_name=f"{abbreviation}_Newsletter.html",
                             mime="text/html",
-                            key=f"download_single_{abbreviation}"
+                            key=f"download_single_{abbreviation}" # Unique key for each button
                         )
                 
                 # --- Batch Download ---
@@ -82,7 +81,7 @@ if ratings_file and caseload_file and namelist_file:
                             file_name = f"{abbreviation}_Newsletter.html"
                             file_path = output_dir / file_name
                             if file_path.exists():
-                                zf.write(file_path, arcname=file_name)
+                                zf.write(file_path, arcname=file_name) # Add file to zip with its original name
                     zip_buffer.seek(0)
 
                     st.download_button(
@@ -93,7 +92,7 @@ if ratings_file and caseload_file and namelist_file:
                     )
         else:
             st.info("Please select at least one officer to generate newsletters.")
-
+            
     except Exception as e:
         st.error(f"❌ An error occurred during processing: {e}")
 else:
