@@ -34,7 +34,7 @@ def detect_header_and_load_csv(file):
         try:
             df = pd.read_csv(file, skiprows=skip, encoding=encoding)
             # IMPORTANT CHANGE: Convert columns to lowercase and strip whitespace
-            df.columns = df.columns.map(str).str.lower().str.strip()
+            df.columns = df.columns.map(str).str.lower().str.replace(r'\s+', ' ', regex=True).str.strip() # MODIFIED LINE
             if 'name' in df.columns: # Check for lowercase 'name' now
                 return df
         except Exception:
@@ -47,13 +47,13 @@ def load_all_data(ratings_file, caseload_file, namelist_file):
     ratings_encoding = detect_encoding(ratings_file)
     ratings_df = pd.read_csv(ratings_file, encoding=ratings_encoding)
     # IMPORTANT CHANGE: Convert columns to lowercase and strip whitespace for ratings_df
-    ratings_df.columns = ratings_df.columns.map(str).str.lower().str.strip()
+    ratings_df.columns = ratings_df.columns.map(str).str.lower().str.replace(r'\s+', ' ', regex=True).str.strip() # MODIFIED LINE
 
     # Load namelist.csv
     namelist_encoding = detect_encoding(namelist_file)
     namelist_df = pd.read_csv(namelist_file, encoding=namelist_encoding)
     # IMPORTANT CHANGE: Convert columns to lowercase and strip whitespace for namelist_df
-    namelist_df.columns = namelist_df.columns.str.lower().str.strip()
+    namelist_df.columns = namelist_df.columns.str.lower().str.replace(r'\s+', ' ', regex=True).str.strip() # MODIFIED LINE
 
     # Load case_load.csv using the helper function
     caseload_df = detect_header_and_load_csv(caseload_file)
