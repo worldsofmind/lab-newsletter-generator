@@ -66,51 +66,52 @@ if ratings_file and caseload_file and namelist_file:
                     f.unlink()
             render_newsletters(all_reports, output_dir)
 
-            st.success("Newsletters generated successfully!")
-            st.markdown("### Download Individual Newsletters:")
+            # … after render_newsletters(all_reports, output_dir) …
 
-            # For each officer, provide three download buttons
-            for report in all_reports:
-                abbr = report['abbreviation']
+st.success("Newsletters generated successfully!")
+st.markdown("### Download Individual Newsletters:")
 
-                # 1) HTML
-                html_path = output_dir / f"{abbr}.html"
-                if html_path.exists():
-                    with open(html_path, "rb") as f_html:
-                        html_data = f_html.read()
-                    st.download_button(
-                        label=f"Download {abbr}.html",
-                        data=html_data,
-                        file_name=f"{abbr}.html",
-                        mime="text/html",
-                        key=f"download_html_{abbr}"
-                    )
+for report in all_reports:
+    abbr = report['abbreviation']
 
-                # 2) PDF
-                pdf_path = output_dir / f"{abbr}.pdf"
-                if pdf_path.exists():
-                    with open(pdf_path, "rb") as f_pdf:
-                        pdf_data = f_pdf.read()
-                    st.download_button(
-                        label=f"Download {abbr}.pdf",
-                        data=pdf_data,
-                        file_name=f"{abbr}.pdf",
-                        mime="application/pdf",
-                        key=f"download_pdf_{abbr}"
-                    )
+    # HTML
+    html_path = output_dir / f"{abbr}.html"
+    if html_path.exists():
+        with open(html_path, "rb") as f_html:
+            html_data = f_html.read()
+        st.download_button(
+            label=f"Download {abbr}.html",
+            data=html_data,
+            file_name=f"{abbr}.html",
+            mime="text/html",
+            key=f"download_html_{abbr}"
+        )
 
-                # 3) PNG
-                png_path = output_dir / f"{abbr}.png"
-                if png_path.exists():
-                    with open(png_path, "rb") as f_png:
-                        png_data = f_png.read()
-                    st.download_button(
-                        label=f"Download {abbr}.png",
-                        data=png_data,
-                        file_name=f"{abbr}.png",
-                        mime="image/png",
-                        key=f"download_png_{abbr}"
-                    )
+    # PDF
+    pdf_path = output_dir / f"{abbr}.pdf"
+    if pdf_path.exists():
+        with open(pdf_path, "rb") as f_pdf:
+            pdf_data = f_pdf.read()
+        st.download_button(
+            label=f"Download {abbr}.pdf",
+            data=pdf_data,
+            file_name=f"{abbr}.pdf",
+            mime="application/pdf",
+            key=f"download_pdf_{abbr}"
+        )
+
+    # PNG
+    png_path = output_dir / f"{abbr}.png"
+    if png_path.exists():
+        with open(png_path, "rb") as f_png:
+            png_data = f_png.read()
+        st.download_button(
+            label=f"Download {abbr}.png",
+            data=png_data,
+            file_name=f"{abbr}.png",
+            mime="image/png",
+            key=f"download_png_{abbr}"
+        )
 
         except Exception as e:
             st.error(f"❌ An error occurred during processing: {e}")
