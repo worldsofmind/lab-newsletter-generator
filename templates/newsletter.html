@@ -4,61 +4,163 @@
   <meta charset="UTF-8" />
   <title>{{ officer.name }}'s Newsletter</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 40px; }
-    h2 { margin-top: 40px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background-color: #f5f5f5; }
-    .section { margin-bottom: 40px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      color: #333;
+    }
 
-    /* Case Statistics Grid Layout */
+    h1 {
+      font-size: 2em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    p {
+      font-size: 1em;
+      margin: 4px 0;
+    }
+
+    h2 {
+      margin-top: 40px;
+      font-size: 1.5em;
+      text-transform: uppercase;
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 4px;
+    }
+
+    /* Case Statistics Grid */
     .case-statistics-wrapper {
       display: grid;
       grid-template-columns: 20% 60% 20%;
       gap: 10px;
       align-items: start;
+      margin-top: 10px;
     }
 
     .header-row {
       display: grid;
       grid-template-columns: 20% 60% 20%;
       text-align: center;
-      margin-bottom: 10px;
+      margin-bottom: 5px;
     }
 
     .header-box {
       font-weight: bold;
-      font-size: 16px;
-      padding: 10px;
+      font-size: 0.9em;
+      padding: 8px;
       background-color: #f0f0f0;
+      border-radius: 4px;
     }
 
     .stat-column {
       display: grid;
-      gap: 10px;
+      gap: 8px;
     }
 
-    .stat-column.middle-column {
+    .middle-column {
       grid-template-columns: repeat(4, 1fr);
     }
 
     .stat-box {
-      border-radius: 8px;
+      border-radius: 6px;
       text-align: center;
-      padding: 10px;
+      padding: 8px;
       color: #333;
-      min-width: 120px;
-      max-width: 180px;
+      min-width: 100px;
+      max-width: 160px;
       overflow-wrap: break-word;
     }
 
-    .blue { background-color: #e3f2fd; }
-    .yellow { background-color: #fff9c4; }
-    .green { background-color: #d0f0c0; }
+    .blue {
+      background-color: #D1EEF1;
+    } /* same as VL.html’s light teal */
 
-    .number { font-size: 20px; font-weight: bold; }
-    .label { font-size: 14px; margin-top: 4px; }
-    .avg { font-size: 12px; color: #555; margin-top: 4px; }
+    .yellow {
+      background-color: #FFF9C4;
+    }
+
+    .green {
+      background-color: #D0F0C0;
+    }
+
+    .number {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin: 2px 0;
+    }
+
+    .label {
+      font-size: 0.9em;
+      margin-top: 4px;
+      text-transform: lowercase;
+      color: #555;
+    }
+
+    .avg {
+      font-size: 0.8em;
+      color: #555;
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    /* Blue box for ratings */
+    .blue_table {
+      background-color: #D1EEF1;
+      padding: 0.5em 0.8em;
+      border: solid white;
+      border-radius: 1em;
+      border-width: 0.3em;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .blue_table_header {
+      background-color: #F1D1D1;
+      margin: 0 0 8px 0;
+      padding: 0.2em 0.5em;
+      font-size: 1.3em;
+      border-radius: 1em;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .rating_table {
+      border-collapse: collapse;
+      width: 100%;
+      background-color: #D1EEF1;
+      margin-bottom: 12px;
+    }
+
+    .rating_table_row {
+      background-color: transparent;
+      font-size: 1.1em;
+    }
+
+    .rating_table th {
+      text-align: left;
+      font-size: 1em;
+      padding: 4px 8px;
+      border-bottom: none;
+    }
+
+    .survey_qn {
+      width: 80%;
+      font-size: 1em;
+      font-weight: normal;
+      vertical-align: top;
+      padding: 4px 8px;
+      text-transform: lowercase;
+    }
+
+    .survey_ans {
+      width: 20%;
+      text-align: left;
+      color: teal;
+      font-size: 1em;
+      vertical-align: top;
+      padding: 4px 8px;
+    }
   </style>
 </head>
 <body>
@@ -77,7 +179,8 @@
     </div>
 
     <div class="case-statistics-wrapper">
-      <div class="stat-column blue-column">
+      <!-- In-house opening / assigned opening -->
+      <div class="stat-column">
         <div class="stat-box blue">
           <div class="number">{{ officer.inhouse_opening }}</div>
           <div class="label">in-house cases</div>
@@ -90,7 +193,8 @@
         </div>
       </div>
 
-      <div class="stat-column yellow-column middle-column">
+      <!-- Middle (new, completed, closed, reassigned) -->
+      <div class="stat-column middle-column">
         <div class="stat-box yellow">
           <div class="number">+{{ officer.inhouse_added }}</div>
           <div class="label">new in-house</div>
@@ -133,7 +237,8 @@
         </div>
       </div>
 
-      <div class="stat-column green-column">
+      <!-- In-house end / assigned end -->
+      <div class="stat-column">
         <div class="stat-box green">
           <div class="number">={{ officer.inhouse_end }}</div>
           <div class="label">in-house cases</div>
@@ -148,46 +253,90 @@
     </div>
   </div>
 
+  <!-- SURVEY RATINGS -->
   <div class="section">
     <h2>Survey Results (Average Rating)</h2>
-    {% if officer.survey_ratings %}
-    <table>
-      <tr><th>Question</th><th>Average Rating</th></tr>
-      {% for q, score in officer.survey_ratings.items() %}
-      <tr><td>{{ q }}</td><td>{{ score }}</td></tr>
-      {% endfor %}
-    </table>
-    {% else %}
-    <p>You do not have any survey ratings this quarter.</p>
-    {% endif %}
+    <div style="width: 100%; display: table;" class="font_3 minwidth">
+      <div style="display: table-row;">
+        <div class="blue_table" style="width: 100%; display: table-cell;">
+          <div class="blue_table_header">Survey Results (Average Rating)</div>
+          {% if officer.survey_ratings %}
+            <table class="rating_table">
+              {% for q, score in officer.survey_ratings.items() %}
+                <tr class="rating_table_row survey_row">
+                  <td class="rating_table_row survey_qn">{{ q }}</td>
+                  <td class="rating_table_row survey_ans" style="color:teal;">
+                    {{ stars_from_score(score) }}
+                  </td>
+                </tr>
+              {% endfor %}
+            </table>
+          {% else %}
+            &nbsp;&nbsp;&nbsp;You do not have any survey ratings this quarter.
+          {% endif %}
+        </div>
+      </div>
+    </div>
   </div>
 
+  <!-- IN-HOUSE CASE RATINGS -->
   <div class="section">
     <h2>Case Ratings (In-House Cases)</h2>
-    {% if officer.inhouse_case_ratings %}
-    <table>
-      <tr><th>Case Ref</th><th>Applicant</th><th>Average Score</th></tr>
-      {% for case in officer.inhouse_case_ratings %}
-      <tr><td>{{ case.case_ref }}</td><td>{{ case.applicant }}</td><td>{{ case.score }}</td></tr>
-      {% endfor %}
-    </table>
-    {% else %}
-    <p>You do not have any in-house case ratings this quarter.</p>
-    {% endif %}
+    <div style="width: 100%; display: table;" class="font_3 minwidth">
+      <div style="display: table-row;">
+        <div class="blue_table" style="width: 100%; display: table-cell;">
+          <div class="blue_table_header">Case Ratings (In-House Cases)</div>
+          {% if officer.inhouse_case_ratings %}
+            <table class="rating_table">
+              <tr class="rating_table_row">
+                <th class="rating_table_row survey_qn">Case Ref</th>
+                <th class="rating_table_row survey_ans">Rating</th>
+              </tr>
+              {% for case in officer.inhouse_case_ratings %}
+                <tr class="rating_table_row survey_row">
+                  <td class="rating_table_row survey_qn">{{ case.case_ref }}</td>
+                  <td class="rating_table_row survey_ans" style="color:teal;">
+                    {{ stars_from_score(case.score) }}
+                  </td>
+                </tr>
+              {% endfor %}
+            </table>
+          {% else %}
+            &nbsp;&nbsp;&nbsp;You do not have any in-house case ratings this quarter.
+          {% endif %}
+        </div>
+      </div>
+    </div>
   </div>
 
+  <!-- ASSIGNED CASE RATINGS -->
   <div class="section">
     <h2>Case Ratings (Assigned Cases)</h2>
-    {% if officer.assigned_case_ratings %}
-    <table>
-      <tr><th>Case Ref</th><th>Applicant</th><th>Average Score</th></tr>
-      {% for case in officer.assigned_case_ratings %}
-      <tr><td>{{ case.case_ref }}</td><td>{{ case.applicant }}</td><td>{{ case.score }}</td></tr>
-      {% endfor %}
-    </table>
-    {% else %}
-    <p>You do not have any assigned case ratings this quarter.</p>
-    {% endif %}
+    <div style="width: 100%; display: table;" class="font_3 minwidth">
+      <div style="display: table-row;">
+        <div class="blue_table" style="width: 100%; display: table-cell;">
+          <div class="blue_table_header">Case Ratings (Assigned Cases)</div>
+          {% if officer.assigned_case_ratings %}
+            <table class="rating_table">
+              <tr class="rating_table_row">
+                <th class="rating_table_row survey_qn">Case Ref</th>
+                <th class="rating_table_row survey_ans">Rating</th>
+              </tr>
+              {% for case in officer.assigned_case_ratings %}
+                <tr class="rating_table_row survey_row">
+                  <td class="rating_table_row survey_qn">{{ case.case_ref }}</td>
+                  <td class="rating_table_row survey_ans" style="color:teal;">
+                    {{ stars_from_score(case.score) }}
+                  </td>
+                </tr>
+              {% endfor %}
+            </table>
+          {% else %}
+            &nbsp;&nbsp;&nbsp;You do not have any assigned case ratings this quarter.
+          {% endif %}
+        </div>
+      </div>
+    </div>
   </div>
 
 </body>
