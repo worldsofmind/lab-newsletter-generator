@@ -8,5 +8,3 @@ fuzzywuzzy
 python-Levenshtein
 chardet
 pyppeteer
-pdfkit
-imgkit
