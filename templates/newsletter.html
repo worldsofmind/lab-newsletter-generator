@@ -81,12 +81,12 @@
         <div class="stat-box blue">
           <div class="number">{{ officer.inhouse_opening }}</div>
           <div class="label">in-house cases</div>
-          <div class="avg">LO Avg: {{ officer.avg_inhouse_opening }}</div>
+          <div class="avg">{{ officer.function | upper }} Avg: {{ officer.avg_inhouse_opening }}</div>
         </div>
         <div class="stat-box blue">
           <div class="number">{{ officer.assigned_opening }}</div>
           <div class="label">assigned cases</div>
-          <div class="avg">LO Avg: {{ officer.avg_assigned_opening }}</div>
+          <div class="avg">{{ officer.function | upper }} Avg: {{ officer.avg_assigned_opening }}</div>
         </div>
       </div>
 
@@ -94,42 +94,42 @@
         <div class="stat-box yellow">
           <div class="number">+{{ officer.inhouse_added }}</div>
           <div class="label">new in-house</div>
-          <div class="avg">LO Avg: +{{ officer.avg_inhouse_added }}</div>
+          <div class="avg">{{ officer.function | upper }} Avg: +{{ officer.avg_inhouse_added }}</div>
         </div>
         <div class="stat-box yellow">
           <div class="number">-{{ officer.inhouse_nfa_712 }}</div>
           <div class="label">completed in-house</div>
-          <div class="avg">LO Avg: -{{ officer.avg_inhouse_nfa_712 }}</div>
+          <div class="avg">{{ officer.function | upper }} Avg: -{{ officer.avg_inhouse_nfa_712 }}</div>
         </div>
         <div class="stat-box yellow">
           <div class="number">-{{ officer.inhouse_nfa_others }}</div>
           <div class="label">closed in-house</div>
-          <div class="avg">LO Avg: -{{ officer.avg_inhouse_nfa_others }}</div>
+          <div class="avg">{{ officer.function | upper }} Avg: -{{ officer.avg_inhouse_nfa_others }}</div>
         </div>
         <div class="stat-box yellow">
           <div class="number">{{ officer.inhouse_reassigned }}</div>
           <div class="label">reassigned in-house</div>
-          <div class="avg">LO Avg: {{ officer.avg_inhouse_reassigned }}</div>
+          <div class="avg">{{ officer.function | upper }} Avg: {{ officer.avg_inhouse_reassigned }}</div>
         </div>
         <div class="stat-box yellow">
           <div class="number">+{{ officer.assigned_added }}</div>
           <div class="label">new assigned</div>
-          <div class="avg">LO Avg: +{{ officer.avg_assigned_added }}</div>
+          <div class="avg">{{ officer.function | upper }} Avg: +{{ officer.avg_assigned_added }}</div>
         </div>
         <div class="stat-box yellow">
           <div class="number">-{{ officer.assigned_nfa_712 }}</div>
           <div class="label">completed assigned</div>
-          <div class="avg">LO Avg: -{{ officer.avg_assigned_nfa_712 }}</div>
+          <div class="avg">{{ officer.function | upper }} Avg: -{{ officer.avg_assigned_nfa_712 }}</div>
         </div>
         <div class="stat-box yellow">
           <div class="number">-{{ officer.assigned_nfa_others }}</div>
           <div class="label">closed assigned</div>
-          <div class="avg">LO Avg: -{{ officer.avg_assigned_nfa_others }}</div>
+          <div class="avg">{{ officer.function | upper }} Avg: -{{ officer.avg_assigned_nfa_others }}</div>
         </div>
         <div class="stat-box yellow">
           <div class="number">{{ officer.assigned_reassigned }}</div>
           <div class="label">reassigned assigned</div>
-          <div class="avg">LO Avg: {{ officer.avg_assigned_reassigned }}</div>
+          <div class="avg">{{ officer.function | upper }} Avg: {{ officer.avg_assigned_reassigned }}</div>
         </div>
       </div>
 
@@ -137,12 +137,12 @@
         <div class="stat-box green">
           <div class="number">={{ officer.inhouse_end }}</div>
           <div class="label">in-house cases</div>
-          <div class="avg">LO Avg: {{ officer.avg_inhouse_end }}</div>
+          <div class="avg">{{ officer.function | upper }} Avg: {{ officer.avg_inhouse_end }}</div>
         </div>
         <div class="stat-box green">
           <div class="number">={{ officer.assigned_end }}</div>
           <div class="label">assigned cases</div>
-          <div class="avg">LO Avg: {{ officer.avg_assigned_end }}</div>
+          <div class="avg">{{ officer.function | upper }} Avg: {{ officer.avg_assigned_end }}</div>
         </div>
       </div>
     </div>
