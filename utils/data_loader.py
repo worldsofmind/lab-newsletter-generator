@@ -1,7 +1,7 @@
 import pandas as pd
 import re
 from datetime import datetime
-from utils.encoding import detect_encoding  # Retain for case_load detection
+from encoding import detect_encoding
 
 def clean_apostrophes(x):
     """
