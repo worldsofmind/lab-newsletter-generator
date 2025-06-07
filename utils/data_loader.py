@@ -1,7 +1,8 @@
 import pandas as pd
+import io
 import re
 from datetime import datetime
-from utils.encoding import detect_encoding  # adjust path if yours differs
+from encoding import detect_encoding  # your existing helper
 
 def extract_dates_from_columns(columns):
     """
@@ -39,15 +40,14 @@ def extract_dates_from_columns(columns):
         "'Total Caseload as at DD/MM/YYYY' columns."
     )
 
-
 def detect_header_and_load_csv(file):
     """
     Try reading the CSV with skiprows=0..14 until we find
     a header row that yields a 'name' column.
     """
     encoding = detect_encoding(file)
-    file.seek(0)
     for skip in range(0, 15):
+        file.seek(0)
         try:
             df = pd.read_csv(file, skiprows=skip, encoding=encoding)
             df.columns = (
@@ -64,13 +64,11 @@ def detect_header_and_load_csv(file):
 
     raise ValueError("Could not parse CSV file with a valid header.")
 
-
 def load_all_data(ratings_file, caseload_file, namelist_file):
     """
     Load and normalize ratings, namelist, and caseload.
     Caseload can be CSV or XLS/XLSX; either way, headers are
-    lowercased and whitespace-stripped, and the true header
-    is auto-detected by looking for a 'name' column.
+    lowercased, whitespace-stripped, and auto-detected.
     Returns: (ratings_df, caseload_df, namelist_df, period_dict)
     """
     # ——— 1️⃣ Load ratings.csv —————————————————————————
@@ -96,32 +94,34 @@ def load_all_data(ratings_file, caseload_file, namelist_file):
     )
 
     # ——— 3️⃣ Load case_load (CSV or XLSX) ———————————————————
-    caseload_file.seek(0)
-    name = getattr(caseload_file, "name", "").lower()
+    # Read file into bytes once
+    caseload_bytes = caseload_file.read()
+    filename = getattr(caseload_file, "name", "").lower()
 
-    if name.endswith((".xls", ".xlsx")):
-        # Auto‐detect header row in Excel, just like CSV logic
-        caseload_file.seek(0)
+    if filename.endswith((".xls", ".xlsx")):
+        # auto‐detect which row is the actual header
+        found = False
         for skip in range(0, 15):
+            bio = io.BytesIO(caseload_bytes)
             try:
-                df = pd.read_excel(caseload_file, skiprows=skip)
-                df.columns = (
-                    df.columns
+                df_try = pd.read_excel(bio, skiprows=skip, header=0)
+                df_try.columns = (
+                    df_try.columns
                       .map(str)
                       .str.lower()
                       .str.replace(r'\s+', ' ', regex=True)
                       .str.strip()
                 )
-                if "name" in df.columns:
-                    caseload_df = df
+                if "name" in df_try.columns:
+                    caseload_df = df_try
+                    found = True
                     break
             except Exception:
-                pass
-        else:
+                continue
+        if not found:
             raise ValueError("Could not parse Excel file with a valid header.")
-
     else:
-        # Fallback to your CSV routine
+        caseload_file.seek(0)
         caseload_df = detect_header_and_load_csv(caseload_file)
 
     # ——— 4️⃣ Extract the reporting period ——————————————————
