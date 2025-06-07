@@ -1,129 +1,64 @@
 import pandas as pd
-import io
 import re
 from datetime import datetime
-from .encoding import detect_encoding   # ← use relative import
+from utils.encoding import detect_encoding # Assuming this import path is correct
 
 def extract_dates_from_columns(columns):
-    """
-    Scan column names for two occurrences of
-    'Total Caseload as at DD/MM/YYYY' and return both dates.
-    """
     start_date, end_date = None, None
     for col in columns:
-        matches = re.findall(
-            r"Total\s+Caseload\s+as\s+at\s+(\d{2}/\d{2}/\d{4})",
-            col,
-            flags=re.IGNORECASE
-        )
+        matches = re.findall(r"Total\s+Caseload\s+as\s+at\s+(\d{2}/\d{2}/\d{4})", col, flags=re.IGNORECASE)
         if matches:
             if not start_date:
                 start_date = matches[0]
             else:
                 end_date = matches[0]
                 break
-
     if start_date and end_date:
         start_obj = datetime.strptime(start_date, "%d/%m/%Y")
-        end_obj   = datetime.strptime(end_date,   "%d/%m/%Y")
+        end_obj = datetime.strptime(end_date, "%d/%m/%Y")
         return {
-            "date_start":         start_date,
-            "date_end":           end_date,
+            "date_start": start_date,
+            "date_end": end_date,
             "date_start_verbose": start_obj.strftime("%d %B %Y").upper(),
-            "date_end_verbose":   end_obj.strftime("%d %B %Y").upper(),
-            "month_start":        start_obj.strftime("%b").upper(),
-            "month_end":          end_obj.strftime("%b").upper(),
+            "date_end_verbose": end_obj.strftime("%d %B %Y").upper(),
+            "month_start": start_obj.strftime("%b").upper(),
+            "month_end": end_obj.strftime("%b").upper()
         }
+    raise ValueError("Could not find the two required 'Total Caseload as at DD/MM/YYYY' columns.")
 
-    raise ValueError(
-        "Could not find the two required "
-        "'Total Caseload as at DD/MM/YYYY' columns."
-    )
 
 def detect_header_and_load_csv(file):
-    """
-    Try reading the CSV with skiprows=0..14 until we find
-    a header row that yields a 'name' column.
-    """
     encoding = detect_encoding(file)
+    file.seek(0)
     for skip in range(0, 15):
-        file.seek(0)
         try:
             df = pd.read_csv(file, skiprows=skip, encoding=encoding)
-            df.columns = (
-                df.columns
-                  .map(str)
-                  .str.lower()
-                  .str.replace(r'\s+', ' ', regex=True)
-                  .str.strip()
-            )
-            if "name" in df.columns:
+            # IMPORTANT CHANGE: Convert columns to lowercase and strip whitespace
+            df.columns = df.columns.map(str).str.lower().str.replace(r'\s+', ' ', regex=True).str.strip() # MODIFIED LINE
+            if 'name' in df.columns: # Check for lowercase 'name' now
                 return df
         except Exception:
             continue
+    raise ValueError("Could not parse CSV file with known headers.")
 
-    raise ValueError("Could not parse CSV file with a valid header.")
 
 def load_all_data(ratings_file, caseload_file, namelist_file):
-    """
-    Load and normalize ratings, namelist, and caseload.
-    Caseload can be CSV or XLS/XLSX; headers are
-    lowercased, whitespace-stripped, and auto-detected.
-    Returns: (ratings_df, caseload_df, namelist_df, period_dict)
-    """
-    # 1) Ratings
+    # Load ratings.csv
     ratings_encoding = detect_encoding(ratings_file)
     ratings_df = pd.read_csv(ratings_file, encoding=ratings_encoding)
-    ratings_df.columns = (
-        ratings_df.columns
-          .map(str)
-          .str.lower()
-          .str.replace(r'\s+', ' ', regex=True)
-          .str.strip()
-    )
+    # IMPORTANT CHANGE: Convert columns to lowercase and strip whitespace for ratings_df
+    ratings_df.columns = ratings_df.columns.map(str).str.lower().str.replace(r'\s+', ' ', regex=True).str.strip() # MODIFIED LINE
 
-    # 2) Namelist
+    # Load namelist.csv
     namelist_encoding = detect_encoding(namelist_file)
     namelist_df = pd.read_csv(namelist_file, encoding=namelist_encoding)
-    namelist_df.columns = (
-        namelist_df.columns
-          .map(str)
-          .str.lower()
-          .str.replace(r'\s+', ' ', regex=True)
-          .str.strip()
-    )
+    # IMPORTANT CHANGE: Convert columns to lowercase and strip whitespace for namelist_df
+    namelist_df.columns = namelist_df.columns.str.lower().str.replace(r'\s+', ' ', regex=True).str.strip() # MODIFIED LINE
 
-    # 3) Case Load
-    caseload_bytes = caseload_file.read()
-    filename = getattr(caseload_file, "name", "").lower()
+    # Load case_load.csv using the helper function
+    caseload_df = detect_header_and_load_csv(caseload_file)
+    # The detect_header_and_load_csv function now handles lowercasing and stripping for caseload_df
 
-    if filename.endswith((".xls", ".xlsx")):
-        # Try skiprows 0–14 to find the real header row
-        found = False
-        for skip in range(0, 15):
-            bio = io.BytesIO(caseload_bytes)
-            try:
-                df_try = pd.read_excel(bio, skiprows=skip, header=0)
-                df_try.columns = (
-                    df_try.columns
-                      .map(str)
-                      .str.lower()
-                      .str.replace(r'\s+', ' ', regex=True)
-                      .str.strip()
-                )
-                if "name" in df_try.columns:
-                    caseload_df = df_try
-                    found = True
-                    break
-            except Exception:
-                continue
-        if not found:
-            raise ValueError("Could not parse Excel file with a valid header.")
-    else:
-        caseload_file.seek(0)
-        caseload_df = detect_header_and_load_csv(caseload_file)
-
-    # 4) Extract dates
     period = extract_dates_from_columns(caseload_df.columns)
 
     return ratings_df, caseload_df, namelist_df, period
