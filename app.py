@@ -17,10 +17,10 @@ st.title("📬 LAB Officer Newsletter Generator")
 with st.sidebar:
     st.header("📂 Upload Files")
     ratings_file = st.file_uploader("Upload `ratings.csv`", type="csv")
-     caseload_file = st.file_uploader(
-        "Upload `case_load.xlsx`", 
-        type=["xlsx","csv"],
-        help="If you upload CSV it will be parsed as before; if you upload XLSX we’ll convert it on the fly."
+    caseload_file = st.file_uploader(
+        "Upload `case_load.xlsx`",
+        type=["xlsx", "xls"],
+        help="Users should upload the raw Excel. We'll convert it automatically."
     )
     namelist_file = st.file_uploader("Upload `namelist.csv`", type="csv")
 
@@ -102,4 +102,4 @@ if ratings_file and caseload_file and namelist_file:
         st.info("After selecting officers, click 'Generate Newsletters' to create and download.")
 
 else:
-    st.info("Upload all three files (ratings.csv, case_load.csv, namelist.csv) to enable generation.")
+    st.info("Upload a
