@@ -58,7 +58,7 @@ if ratings_file and caseload_file and namelist_file:
 
             all_reports = []
             for _, officer_row in filtered.iterrows():
-                stats = compute_officer_stats(officer_row, caseload_df, ratings_df)
+                stats = compute_officer_stats(officer_row, caseload_df, ratings_df, period)
                 all_reports.append(stats)
 
             # Render each officer's HTML into output/<ABBR>.html
