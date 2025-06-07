@@ -2,7 +2,7 @@ import pandas as pd
 import io
 import re
 from datetime import datetime
-from encoding import detect_encoding  # your existing helper
+from .encoding import detect_encoding   # ← use relative import
 
 def extract_dates_from_columns(columns):
     """
@@ -67,11 +67,11 @@ def detect_header_and_load_csv(file):
 def load_all_data(ratings_file, caseload_file, namelist_file):
     """
     Load and normalize ratings, namelist, and caseload.
-    Caseload can be CSV or XLS/XLSX; either way, headers are
+    Caseload can be CSV or XLS/XLSX; headers are
     lowercased, whitespace-stripped, and auto-detected.
     Returns: (ratings_df, caseload_df, namelist_df, period_dict)
     """
-    # ——— 1️⃣ Load ratings.csv —————————————————————————
+    # 1) Ratings
     ratings_encoding = detect_encoding(ratings_file)
     ratings_df = pd.read_csv(ratings_file, encoding=ratings_encoding)
     ratings_df.columns = (
@@ -82,7 +82,7 @@ def load_all_data(ratings_file, caseload_file, namelist_file):
           .str.strip()
     )
 
-    # ——— 2️⃣ Load namelist.csv —————————————————————————
+    # 2) Namelist
     namelist_encoding = detect_encoding(namelist_file)
     namelist_df = pd.read_csv(namelist_file, encoding=namelist_encoding)
     namelist_df.columns = (
@@ -93,13 +93,12 @@ def load_all_data(ratings_file, caseload_file, namelist_file):
           .str.strip()
     )
 
-    # ——— 3️⃣ Load case_load (CSV or XLSX) ———————————————————
-    # Read file into bytes once
+    # 3) Case Load
     caseload_bytes = caseload_file.read()
     filename = getattr(caseload_file, "name", "").lower()
 
     if filename.endswith((".xls", ".xlsx")):
-        # auto‐detect which row is the actual header
+        # Try skiprows 0–14 to find the real header row
         found = False
         for skip in range(0, 15):
             bio = io.BytesIO(caseload_bytes)
@@ -124,7 +123,7 @@ def load_all_data(ratings_file, caseload_file, namelist_file):
         caseload_file.seek(0)
         caseload_df = detect_header_and_load_csv(caseload_file)
 
-    # ——— 4️⃣ Extract the reporting period ——————————————————
+    # 4) Extract dates
     period = extract_dates_from_columns(caseload_df.columns)
 
     return ratings_df, caseload_df, namelist_df, period
