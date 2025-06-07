@@ -17,7 +17,11 @@ st.title("📬 LAB Officer Newsletter Generator")
 with st.sidebar:
     st.header("📂 Upload Files")
     ratings_file = st.file_uploader("Upload `ratings.csv`", type="csv")
-    caseload_file = st.file_uploader("Upload `case_load.csv`", type="csv")
+     caseload_file = st.file_uploader(
+        "Upload `case_load.xlsx`", 
+        type=["xlsx","csv"],
+        help="If you upload CSV it will be parsed as before; if you upload XLSX we’ll convert it on the fly."
+    )
     namelist_file = st.file_uploader("Upload `namelist.csv`", type="csv")
 
     if not (ratings_file and caseload_file and namelist_file):
