@@ -1,19 +1,11 @@
 import pandas as pd
 import numpy as np
 
-def compute_officer_stats(officer_row, case_df, ratings_df):
+def compute_officer_stats(officer_row, case_df, ratings_df, period):
     officer_name = officer_row['name']
     abbreviation = officer_row['abbreviation']
     function = officer_row['function']  # e.g. "LO" or "LE"
     func_lower = function.lower()
-    period = {
-        "date_start": "08/05/2024",
-        "date_end": "02/08/2024",
-        "date_start_verbose": "8 May 2024",
-        "date_end_verbose": "2 Aug 2024",
-        "month_start": "May",
-        "month_end": "Aug"
-    }
 
     # Helper to safely get a single officer's value from case_df
     def safe_get(col_name):
