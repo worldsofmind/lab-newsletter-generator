@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
 import os
-import io
-import zipfile
 from pathlib import Path
 
 from utils.data_loader import load_all_data
@@ -102,4 +100,4 @@ if ratings_file and caseload_file and namelist_file:
         st.info("After selecting officers, click 'Generate Newsletters' to create and download.")
 
 else:
-    st.info("Upload a
+    st.info("Upload all three files (ratings, case_load, namelist) to enable generation.")
