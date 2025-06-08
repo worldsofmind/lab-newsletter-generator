@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-def compute_officer_stats(officer_row, case_df, ratings_df):
+def compute_officer_stats(officer_row, case_df, ratings_df, period):
     officer_name = officer_row['name']
     abbreviation = officer_row['abbreviation']
     function = officer_row['function']  # e.g. "LO" or "LE"
