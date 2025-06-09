@@ -17,7 +17,7 @@ def compute_officer_stats(officer_row, case_df, ratings_df, period):
         ]
         if series.empty:
             return 0
-        return series.squeeze()
+        return series.iloc[0]
 
     # Helper to compute the average for a given column, but only among
     # rows whose 'function' matches this officer's function.
