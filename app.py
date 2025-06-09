@@ -50,7 +50,7 @@ if ratings_file and caseload_file and namelist_file:
                 ratings_file, caseload_file, namelist_file
             )
 
-            # Determine which subset of officers to process
+            # Determine which subset of officers to process (reverted to original check)
             if selected_officers:
                 filtered = namelist_df[namelist_df['name'].isin(selected_officers)]
             else:
@@ -73,6 +73,32 @@ if ratings_file and caseload_file and namelist_file:
             render_newsletters(all_reports, output_dir)
 
             st.success("Newsletters generated successfully!")
+
+            # ——— Download All Newsletters button ———
+            st.subheader("Download All Newsletters:")
+            if st.button("Generate & Download All"):
+                # Read all officer files into memory
+                all_reports_data = {}
+                for report in all_reports:
+                    abbr = report['abbreviation']
+                    file_path = output_dir / f"{abbr}.html"
+                    if file_path.exists():
+                        with open(file_path, "rb") as f:
+                            all_reports_data[abbr] = f.read()
+                # Zip them
+                buffer = io.BytesIO()
+                with zipfile.ZipFile(buffer, "w") as z:
+                    for abbr, data in all_reports_data.items():
+                        z.writestr(f"{abbr}.html", data)
+                buffer.seek(0)
+                st.download_button(
+                    "Download All as ZIP",
+                    buffer,
+                    file_name="all_newsletters.zip",
+                    mime="application/zip",
+                    key="download_all"
+                )
+
             st.markdown("### Download Individual Newsletters:")
 
             # Show a download button per officer
@@ -99,3 +125,4 @@ if ratings_file and caseload_file and namelist_file:
 
 else:
     st.info("Upload all three files (ratings.csv, case_load.csv, namelist.csv) to enable generation.")
+
