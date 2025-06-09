@@ -15,7 +15,6 @@ A Streamlit-based tool to generate HTML newsletters for Legal Aid Bureau officer
 ## Prerequisites
 
 - Python 3.8+
-- Google Chrome (for optional HTML→PNG conversion via `html2image` / `pyppeteer`)
 
 ## Installation
 
