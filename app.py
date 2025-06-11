@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import os
@@ -33,8 +34,22 @@ if ratings_file and caseload_file and namelist_file:
         st.error(f"❌ Failed to read files: {e}")
         st.stop()
 
-    st.subheader("Select Officers to Generate Newsletters")
-    officer_names = namelist_df['name'].dropna().str.strip().tolist()
+    st.subheader("Filter and Select Officers to Generate Newsletters")
+
+    # Dropdown to filter by function
+    function_filter = st.selectbox(
+        "Filter by Function:",
+        options=["All", "LO", "LE"],
+        index=0
+    )
+
+    # Filter namelist_df by selected function
+    if function_filter != "All":
+        filtered_namelist = namelist_df[namelist_df['function'].str.upper() == function_filter]
+    else:
+        filtered_namelist = namelist_df
+
+    officer_names = filtered_namelist['name'].dropna().str.strip().tolist()
 
     # Multiselect widget on the main page (scrollable list)
     selected_officers = st.multiselect(
@@ -49,6 +64,10 @@ if ratings_file and caseload_file and namelist_file:
             ratings_df, caseload_df, namelist_df, period = load_all_data(
                 ratings_file, caseload_file, namelist_file
             )
+
+            # Apply same function filtering after reload
+            if function_filter != "All":
+                namelist_df = namelist_df[namelist_df['function'].str.upper() == function_filter]
 
             # Determine which subset of officers to process
             if selected_officers:
@@ -73,30 +92,6 @@ if ratings_file and caseload_file and namelist_file:
             render_newsletters(all_reports, output_dir)
 
             st.success("Newsletters generated successfully!")
-
-            # ——— Download All Newsletters ———
-            st.subheader("Download All Newsletters:")
-            # Prepare zip in memory
-            all_reports_data = {}
-            for report in all_reports:
-                abbr = report['abbreviation']
-                file_path = output_dir / f"{abbr}.html"
-                if file_path.exists():
-                    with open(file_path, "rb") as f:
-                        all_reports_data[f"{abbr}.html"] = f.read()
-            buffer = io.BytesIO()
-            with zipfile.ZipFile(buffer, "w") as z:
-                for filename, data in all_reports_data.items():
-                    z.writestr(filename, data)
-            buffer.seek(0)
-            st.download_button(
-                label="Download All as ZIP",
-                data=buffer,
-                file_name="all_newsletters.zip",
-                mime="application/zip",
-                key="download_all"
-            )
-
             st.markdown("### Download Individual Newsletters:")
 
             # Show a download button per officer
