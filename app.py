@@ -94,7 +94,26 @@ if ratings_file and caseload_file and namelist_file:
             st.success("Newsletters generated successfully!")
             st.markdown("### Download Individual Newsletters:")
 
+            
+            # Offer ZIP download if all officers selected
+            if not selected_officers:
+                zip_buffer = io.BytesIO()
+                with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+                    for report in all_reports:
+                        abbr = report['abbreviation']
+                        file_path = output_dir / f"{abbr}.html"
+                        if file_path.exists():
+                            zipf.write(file_path, arcname=f"{abbr}.html")
+                zip_buffer.seek(0)
+                st.download_button(
+                    label="📦 Download All Newsletters (ZIP)",
+                    data=zip_buffer,
+                    file_name="all_newsletters.zip",
+                    mime="application/zip"
+                )
+
             # Show a download button per officer
+
             for report in all_reports:
                 abbr = report['abbreviation']
                 file_path = output_dir / f"{abbr}.html"
